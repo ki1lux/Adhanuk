@@ -1,7 +1,7 @@
 // import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
+// import 'package:flutter/scheduler.dart';
 import 'package:myadhan/controller/ClockController.dart';
 import 'package:myadhan/model/ClockModel.dart';
 import 'package:intl/intl.dart';
@@ -45,7 +45,15 @@ class _AnalogclockviewState extends State<Analogclockview> {
             MediaQuery.sizeOf(context).width,
           ),
         ),
-        Text("$timeAfterReform"),
+        SizedBox(height: 50),
+        Text(
+          "$timeAfterReform",
+          style: TextStyle(
+            fontFamily: 'cairo',
+            decoration: TextDecoration.none,
+            color: Color(0xffF0F8FF),
+          ),
+        ),
       ],
     );
   }
@@ -63,7 +71,7 @@ class ClockPainter extends CustomPainter {
 
     final paintCircle =
         Paint()
-          ..color = Colors.blueGrey.shade50
+          ..color = Color(0xffD3E0EC)
           ..style = PaintingStyle.fill;
 
     canvas.drawCircle(center, radius / 2, paintCircle);
@@ -71,8 +79,8 @@ class ClockPainter extends CustomPainter {
     // علامات الساعة
     final tickPaint =
         Paint()
-          ..color = Colors.blueGrey.shade200
-          ..strokeWidth = 3;
+          ..color = Color(0xffD3E0EC)
+          ..strokeWidth = 3.3;
 
     for (int i = 0; i < 60; i++) {
       final angle = 2 * pi * i / 60;
@@ -90,12 +98,12 @@ class ClockPainter extends CustomPainter {
     // عقرب الساعات
     final hourAngle = degree.hourAngle;
     final hourHand = Offset(
-      center.dx + radius * 0.4 * cos(hourAngle - pi / 2),
-      center.dy + radius * 0.4 * sin(hourAngle - pi / 2),
+      center.dx + radius * 0.5 * cos(hourAngle - pi / 2),
+      center.dy + radius * 0.5 * sin(hourAngle - pi / 2),
     );
     final hourPaint =
         Paint()
-          ..color = Colors.blueGrey.shade800
+          ..color = Color(0xff283F54)
           ..strokeWidth = 6
           ..strokeCap = StrokeCap.round;
     canvas.drawLine(center, hourHand, hourPaint);
@@ -103,31 +111,50 @@ class ClockPainter extends CustomPainter {
     // عقرب الدقائق
     final minuteAngle = degree.minuteAngle;
     final minuteHand = Offset(
-      center.dx + radius * 0.6 * cos(minuteAngle - pi / 2),
-      center.dy + radius * 0.6 * sin(minuteAngle - pi / 2),
+      center.dx + radius * 0.8 * cos(minuteAngle - pi / 2),
+      center.dy + radius * 0.8 * sin(minuteAngle - pi / 2),
     );
     final minutePaint =
         Paint()
-          ..color = Colors.blueGrey.shade900
-          ..strokeWidth = 4
+          ..color = Color(0xff283F54)
+          ..strokeWidth = 6
           ..strokeCap = StrokeCap.round;
     canvas.drawLine(center, minuteHand, minutePaint);
+
+    // final paint = Paint()..color = Colors.red;
+    // final handRect = RRect.fromLTRBR(
+    //   15,
+    //   0,
+    //   8,
+    //   9, // Start at 15 to leave space for tail
+    //   Radius.circular(radius),
+    // );
+    // canvas.drawRRect(handRect, paint);
 
     // عقرب الثواني
     final secondAngle = degree.second;
     final secondHand = Offset(
-      center.dx + radius * 0.7 * cos(secondAngle - pi / 2),
-      center.dy + radius * 0.7 * sin(secondAngle - pi / 2),
+      center.dx + radius * cos(secondAngle - pi / 2),
+      center.dy + radius * sin(secondAngle - pi / 2),
     );
     final secondPaint =
         Paint()
-          ..color = Colors.blueGrey.shade700
-          ..strokeWidth = 2;
-    canvas.drawLine(center, secondHand, secondPaint);
+          ..color = Color(0xff283F54)
+          ..strokeWidth = 2
+          ..strokeCap = StrokeCap.round;
+    // canvas.drawLine(center, secondHand, secondPaint);
+    final tailLength = radius * 0.15;
+    final secondHandTail = Offset(
+      center.dx - tailLength * cos(secondAngle - pi / 2),
+      center.dy - tailLength * sin(secondAngle - pi /2),
+      );
+    canvas.drawLine(secondHandTail, secondHand, secondPaint);
 
     // دائرة في المنتصف
-    final centerDot = Paint()..color = Colors.blueGrey.shade600;
-    canvas.drawCircle(center, 5, centerDot);
+    final centerDot = Paint()..color = Color(0xff283F54);
+    canvas.drawCircle(center, 6.5, centerDot);
+    final additionalCenterDot = Paint()..color = Color(0xffD3E0EC);
+    canvas.drawCircle(center, 3, additionalCenterDot);
   }
 
   @override

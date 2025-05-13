@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:myadhan/view/AnalogClockView.dart';
 // import 'package:geolocator/geolocator.dart';
 // import 'package:adhan/adhan.dart';
-import 'package:myadhan/view/adhan_screen.dart';
+// import 'package:myadhan/view/adhan_screen.dart';
 // import 'package:myadhan/test.dart';
 
 void main() {
@@ -23,7 +24,12 @@ class _MyAppState extends State<MyApp> {
       home: Stack(
         children: [
           Container(
-            color: const Color(0xFF1A2B3C), // Dark blue background
+            color: const Color.fromARGB(
+              255,
+              10,
+              35,
+              59,
+            ), // Dark blue background
           ),
           Positioned(
             top:
@@ -31,18 +37,16 @@ class _MyAppState extends State<MyApp> {
             left: -100,
             right: -100,
             child: Container(
-              height: 500, // Large enough to create a circle
+              height: 600, // Large enough to create a circle
               decoration: const BoxDecoration(
-                color: Colors.white,
+                color: Color(0xFFF0F8FF),
                 shape: BoxShape.circle,
               ),
             ),
           ),
+          Positioned(child: Analogclockview()),
         ],
       ),
     );
   }
 }
-
-
-
