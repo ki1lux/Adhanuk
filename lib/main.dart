@@ -1,8 +1,11 @@
+// import 'dart:nativewrappers/_internal/vm/lib/ffi_patch.dart';
+
 import 'package:flutter/material.dart';
-import 'package:myadhan/view/AnalogClockView.dart';
+// import 'package:flutter_svg/svg.dart';
+// import 'package:myadhan/view/AnalogClockView.dart';
 // import 'package:geolocator/geolocator.dart';
 // import 'package:adhan/adhan.dart';
-// import 'package:myadhan/view/adhan_screen.dart';
+import 'package:myadhan/view/adhan_screen.dart';
 // import 'package:myadhan/test.dart';
 
 void main() {
@@ -21,31 +24,14 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Stack(
-        children: [
-          Container(
-            color: const Color.fromARGB(
-              255,
-              10,
-              35,
-              59,
-            ), // Dark blue background
-          ),
-          Positioned(
-            top:
-                -200, // Adjust this value to control how much of the circle shows
-            left: -100,
-            right: -100,
-            child: Container(
-              height: 600, // Large enough to create a circle
-              decoration: const BoxDecoration(
-                color: Color(0xFFF0F8FF),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(child: Analogclockview()),
-        ],
+      home: Scaffold(
+        extendBody: true,
+        body: AdhanScreen(),
+      bottomNavigationBar: BottomNavigationBar(items: [
+            BottomNavigationBarItem (icon: Icon(Icons.home), label: "Home"),
+            BottomNavigationBarItem(icon: Icon(Icons.compass_calibration), label: "Compass"),
+            BottomNavigationBarItem(icon: Icon(Icons.access_time), label: "Time"),
+          ]),
       ),
     );
   }

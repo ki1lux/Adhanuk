@@ -52,6 +52,8 @@ class _AnalogclockviewState extends State<Analogclockview> {
             fontFamily: 'cairo',
             decoration: TextDecoration.none,
             color: Color(0xffF0F8FF),
+            fontSize: 50,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -146,8 +148,8 @@ class ClockPainter extends CustomPainter {
     final tailLength = radius * 0.15;
     final secondHandTail = Offset(
       center.dx - tailLength * cos(secondAngle - pi / 2),
-      center.dy - tailLength * sin(secondAngle - pi /2),
-      );
+      center.dy - tailLength * sin(secondAngle - pi / 2),
+    );
     canvas.drawLine(secondHandTail, secondHand, secondPaint);
 
     // دائرة في المنتصف
