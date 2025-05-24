@@ -1,5 +1,7 @@
 // import 'dart:nativewrappers/_internal/vm/lib/ffi_patch.dart';
 
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 // import 'package:flutter_svg/svg.dart';
@@ -36,18 +38,20 @@ class _MyAppState extends State<MyApp> {
       home: Scaffold(
         extendBody: true,
         body: AdhanScreen(),
+
         bottomNavigationBar: Padding(
           padding: const EdgeInsets.only(bottom: 16, right: 12, left: 12),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Container(
               height: 58,
-              // padding: EdgeInsets.symmetric(vertical: 16),
+              // padding: EdgeInsets.symmetric(vertical: 18),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildNavItem('assets/h1.svg', 0),
@@ -63,18 +67,20 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildNavItem(String assets, int index) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _onTap(index),
-        child: Container(
-          padding: EdgeInsets.all(16),
-          
-          child: SvgPicture.asset(
-            assets,
-            colorFilter: ColorFilter.mode(
-              _slectIndex == index ? Colors.white : Colors.white60,
-              BlendMode.srcIn,
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _onTap(index),
+          child: Container(
+            height: double.infinity,
+            padding: EdgeInsets.all(18),
+            child: SvgPicture.asset(
+              assets,
+              colorFilter: ColorFilter.mode(
+                _slectIndex == index ? Colors.white : Colors.white60,
+                BlendMode.srcIn,
+              ),
             ),
           ),
         ),
