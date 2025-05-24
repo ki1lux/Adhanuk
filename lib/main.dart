@@ -69,6 +69,7 @@ class _MyAppState extends State<MyApp> {
         onTap: () => _onTap(index),
         child: Container(
           padding: EdgeInsets.all(16),
+          
           child: SvgPicture.asset(
             assets,
             colorFilter: ColorFilter.mode(
