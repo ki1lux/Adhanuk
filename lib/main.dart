@@ -1,6 +1,9 @@
 // import 'dart:nativewrappers/_internal/vm/lib/ffi_patch.dart';
 
-import 'dart:ffi';
+// import 'dart:ffi';
+import 'package:myadhan/view/QiblaScreen.dart';
+import 'package:myadhan/view/PrayerTimeScreen.dart';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -31,33 +34,45 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  final List<Widget> _whichPage = [
+    QiblaScreen(),
+    AdhanScreen(),
+    PrayerTimeScreen(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         extendBody: true,
-        body: AdhanScreen(),
+        body: IndexedStack(
+          index: _slectIndex,
+          children: _whichPage,
+        ),
 
         bottomNavigationBar: Padding(
           padding: const EdgeInsets.only(bottom: 16, right: 12, left: 12),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Container(
-              height: 58,
-              // padding: EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem('assets/h1.svg', 0),
-                  _buildNavItem('assets/h2.svg', 1),
-                  _buildNavItem('assets/h3.svg', 2),
-                ],
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+              child: Container(
+                height: 58,
+                // padding: EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem('assets/h1.svg', 0),
+                    _buildNavItem('assets/h2.svg', 1),
+                    _buildNavItem('assets/h3.svg', 2),
+                  ],
+                ),
               ),
             ),
           ),
