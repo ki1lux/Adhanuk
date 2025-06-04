@@ -46,10 +46,7 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         extendBody: true,
-        body: IndexedStack(
-          index: _slectIndex,
-          children: _whichPage,
-        ),
+        body: IndexedStack(index: _slectIndex, children: _whichPage),
 
         bottomNavigationBar: Padding(
           padding: const EdgeInsets.only(bottom: 16, right: 12, left: 12),
