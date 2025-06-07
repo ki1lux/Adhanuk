@@ -33,7 +33,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
           Column(
             children: [
               Padding(
-                padding: EdgeInsets.only(right: 16, top: 96),
+                padding: EdgeInsets.only(right: 16, top: 89),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -67,7 +67,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 48),
+              SizedBox(height: 64),
               Column(
                 children:
                     prayerTimes.map((prayer) {
@@ -84,26 +84,37 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
 
 Widget prayerCard(String name, String time) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 16, right: 12, left: 12),
+    padding: const EdgeInsets.only(bottom: 18, right: 12, left: 12),
     child: ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(36),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
         child: Container(
-          height: 58,
+          height: 76,
           // padding: EdgeInsets.symmetric(vertical: 18),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(36),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
-              // Text("data"),
-              Text("$name", style: TextStyle(color: Color(0xffF0F8FF))),
-            ],
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
+                // Text("data"),
+                Text(
+                  "$name",
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    color: Color(0xffF0F8FF),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
