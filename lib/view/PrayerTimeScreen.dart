@@ -88,12 +88,12 @@ Widget prayerCard(String name, String time) {
     child: ClipRRect(
       borderRadius: BorderRadius.circular(36),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+        filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
         child: Container(
           height: 76,
           // padding: EdgeInsets.symmetric(vertical: 18),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withOpacity(0.03),
             borderRadius: BorderRadius.circular(36),
           ),
           child: Padding(
@@ -104,13 +104,31 @@ Widget prayerCard(String name, String time) {
               children: [
                 Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
                 // Text("data"),
-                Text(
-                  "$name",
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    color: Color(0xffF0F8FF),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "$name",
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          color: Color(0xffF0F8FF),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "$time",
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          color: Color(0xffF0F8FF),
+                          fontWeight: FontWeight.w100,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
