@@ -1,24 +1,43 @@
 import 'dart:ui';
 
+// import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
+import 'package:myadhan/controller/PrayerTimeController.dart';
 
 class PrayerTimeScreen extends StatefulWidget {
   @override
   _PrayerTimeState createState() => _PrayerTimeState();
 }
 
+final PrayerTimeController controller = PrayerTimeController();
+final PrayerTimes = controller.getPrayerTimes();
+
 class _PrayerTimeState extends State<PrayerTimeScreen> {
   final List<Map<String, String>> prayerTimes = [
-    {"name": "الفجر", "time": "04:32"},
-    {"name": "الظهر", "time": "12:41"},
-    {"name": "العصر", "time": "16:11"},
-    {"name": "المغرب", "time": "19:35"},
-    {"name": "العشاء", "time": "20:52"},
+    {
+      "name": "الفجر",
+      "time": "${DateFormat('h:mm').format(PrayerTimes.fajer)}",
+    },
+    {
+      "name": "الظهر",
+      "time": "${DateFormat('h:mm').format(PrayerTimes.dhuhr)}",
+    },
+    {"name": "العصر", "time": "${DateFormat('h:mm').format(PrayerTimes.asr)}"},
+    {
+      "name": "المغرب",
+      "time": "${DateFormat('h:mm').format(PrayerTimes.maghrib)}",
+    },
+    {
+      "name": "العشاء",
+      "time": "${DateFormat('h:mm').format(PrayerTimes.isha)}",
+    },
   ];
 
   @override
   Widget build(BuildContext context) {
+    // final prayerTime = controller.getPrayerTimes;
     // TODO: implement build
     return Scaffold(
       body: Stack(
