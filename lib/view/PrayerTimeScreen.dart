@@ -18,20 +18,20 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
   final List<Map<String, String>> prayerTimes = [
     {
       "name": "الفجر",
-      "time": "${DateFormat('h:mm').format(PrayerTimes.fajer)}",
+      "time": "${DateFormat('HH:mm').format(PrayerTimes.fajer)}",
     },
     {
       "name": "الظهر",
-      "time": "${DateFormat('h:mm').format(PrayerTimes.dhuhr)}",
+      "time": "${DateFormat('HH:mm').format(PrayerTimes.dhuhr)}",
     },
-    {"name": "العصر", "time": "${DateFormat('h:mm').format(PrayerTimes.asr)}"},
+    {"name": "العصر", "time": "${DateFormat('HH:mm').format(PrayerTimes.asr)}"},
     {
       "name": "المغرب",
-      "time": "${DateFormat('h:mm').format(PrayerTimes.maghrib)}",
+      "time": "${DateFormat('HH:mm').format(PrayerTimes.maghrib)}",
     },
     {
       "name": "العشاء",
-      "time": "${DateFormat('h:mm').format(PrayerTimes.isha)}",
+      "time": "${DateFormat('HH:mm').format(PrayerTimes.isha)}",
     },
   ];
 

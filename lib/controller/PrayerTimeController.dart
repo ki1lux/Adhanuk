@@ -6,7 +6,7 @@ class PrayerTimeController {
     final batnaCoordinates = Coordinates(35.5559, 6.1741);
 
     final params = CalculationMethod.karachi.getParameters();
-    params.madhab = Madhab.hanafi;
+    params.madhab = Madhab.shafi;
     final prayerTimes = PrayerTimes.today(batnaCoordinates, params);
     return PrayerTimeModel(
       fajer: prayerTimes.fajr,
