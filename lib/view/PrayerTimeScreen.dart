@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 // import 'package:adhan/adhan.dart';
+import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -37,7 +38,8 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final prayerTime = controller.getPrayerTimes;
+    int nextIndex = getNextPrayer(prayerTimes);
+
     // TODO: implement build
     return Scaffold(
       body: Stack(
@@ -89,8 +91,14 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
               SizedBox(height: 64),
               Column(
                 children:
-                    prayerTimes.map((prayer) {
-                      return prayerCard(prayer["name"]!, prayer["time"]!);
+                    prayerTimes.asMap().entries.map((entry) {
+                      int i = entry.key;
+                      var prayer = entry.value;
+                      return prayerCard(
+                        prayer["name"]!,
+                        prayer["time"]!,
+                        i == nextIndex,
+                      );
                     }).toList(),
               ),
             ],
@@ -101,7 +109,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
   }
 }
 
-Widget prayerCard(String name, String time) {
+Widget prayerCard(String name, String time, bool isNext) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 18, right: 12, left: 12),
     child: ClipRRect(
@@ -122,7 +130,10 @@ Widget prayerCard(String name, String time) {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
-                // Text("data"),
+
+                //there where i want to add countDownTimer just at the next prayer
+                isNext ? Text("Timer") : Text("data"),
+
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: Column(
@@ -157,4 +168,21 @@ Widget prayerCard(String name, String time) {
       ),
     ),
   );
+}
+
+int getNextPrayer(List<Map<String, String>> prayerTimes) {
+  final timeNow = TimeOfDay.now();
+  for (var i = 0; i < prayerTimes.length; i++) {
+    final time = prayerTimes[i]['time']!;
+    final hour = int.parse(time.split(":")[0]);
+    final minute = int.parse(time.split(":")[1]);
+    final prayerTime = TimeOfDay(hour: hour, minute: minute);
+
+    if (prayerTime.hour > timeNow.hour ||
+        (prayerTime.hour == timeNow.hour &&
+            prayerTime.minute > timeNow.minute)) {
+      return i;
+    }
+  }
+  return -1;
 }

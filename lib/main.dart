@@ -83,6 +83,9 @@ class _MyAppState extends State<MyApp> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          splashColor: Color.fromARGB(255, 14, 43, 70),
+          highlightColor: Color(0xff0A2239),
+          hoverColor: Color(0xff0A2239),
           onTap: () => _onTap(index),
           child: Container(
             height: double.infinity,
