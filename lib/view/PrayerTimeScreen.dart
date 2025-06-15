@@ -132,7 +132,19 @@ Widget prayerCard(String name, String time, bool isNext) {
                 Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
 
                 //there where i want to add countDownTimer just at the next prayer
-                isNext ? Text("Timer") : Text("data"),
+                isNext
+                    ? Text(
+                      // textAlign: TextAlign.left,
+                      "02 : 36 : 47",
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        color: Color(0xffF0F8FF),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                      ),
+                    )
+                    : Text(""),
+                SizedBox(width: 32),
 
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
