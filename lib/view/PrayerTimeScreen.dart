@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 // import 'package:adhan/adhan.dart';
@@ -14,6 +15,8 @@ class PrayerTimeScreen extends StatefulWidget {
 
 final PrayerTimeController controller = PrayerTimeController();
 final PrayerTimes = controller.getPrayerTimes();
+Duration remaining =  ;
+Timer? timer;
 
 class _PrayerTimeState extends State<PrayerTimeScreen> {
   final List<Map<String, String>> prayerTimes = [
@@ -35,6 +38,31 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
       "time": "${DateFormat('HH:mm').format(PrayerTimes.isha)}",
     },
   ];
+
+  
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    timerForTheNextPrayer();
+  }
+
+  void timerForTheNextPrayer() {
+    const onSecond = const Duration(seconds: 1);
+
+    timer = Timer.periodic(onSecond, (_) {
+      // final second = 1;
+      setState(() {
+        remaining = remaining - Duration(seconds: 1);
+        // if (remaining.isNegative) {
+        //   getNextPrayer(prayerTimes);
+        // }
+        // final seconds = remaining.inSeconds - second;
+        // remaining = Duration(seconds: seconds);
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,94 +135,133 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
       ),
     );
   }
-}
 
-Widget prayerCard(String name, String time, bool isNext) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 18, right: 12, left: 12),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(36),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
-        child: Container(
-          height: 76,
-          // padding: EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.03),
-            borderRadius: BorderRadius.circular(36),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
+  Widget prayerCard(String name, String time, bool isNext) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18, right: 12, left: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(36),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
+          child: Container(
+            height: 76,
+            // padding: EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(36),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
 
-                //there where i want to add countDownTimer just at the next prayer
-                isNext
-                    ? Text(
-                      // textAlign: TextAlign.left,
-                      "02 : 36 : 47",
-                      style: TextStyle(
-                        fontFamily: 'Cairo',
-                        color: Color(0xffF0F8FF),
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
-                      ),
-                    )
-                    : Text(""),
-                SizedBox(width: 32),
-
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "$name",
+                  //there where i want to add countDownTimer just at the next prayer
+                  isNext
+                      ? Text(
+                        // textAlign: TextAlign.left,
+                        "${formatDurationIntl(remaining)}",
                         style: TextStyle(
                           fontFamily: 'Cairo',
                           color: Color(0xffF0F8FF),
-                          fontWeight: FontWeight.w500,
-                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
                         ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        "$time",
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          color: Color(0xffF0F8FF),
-                          fontWeight: FontWeight.w100,
-                          fontSize: 14,
+                      )
+                      : Text(""),
+                  SizedBox(width: 32),
+
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "$name",
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            color: Color(0xffF0F8FF),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                    ],
+                        SizedBox(height: 2),
+                        Text(
+                          "$time",
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            color: Color(0xffF0F8FF),
+                            fontWeight: FontWeight.w100,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
-
-int getNextPrayer(List<Map<String, String>> prayerTimes) {
-  final timeNow = TimeOfDay.now();
-  for (var i = 0; i < prayerTimes.length; i++) {
-    final time = prayerTimes[i]['time']!;
-    final hour = int.parse(time.split(":")[0]);
-    final minute = int.parse(time.split(":")[1]);
-    final prayerTime = TimeOfDay(hour: hour, minute: minute);
-
-    if (prayerTime.hour > timeNow.hour ||
-        (prayerTime.hour == timeNow.hour &&
-            prayerTime.minute > timeNow.minute)) {
-      return i;
-    }
+    );
   }
-  return -1;
+
+  String formatDurationIntl(Duration duration) {
+    final format = DateFormat('HH:mm:ss');
+    return format.format(
+      DateTime(
+        0,
+        0,
+        0,
+        duration.inHours,
+        duration.inMinutes.remainder(60),
+        duration.inSeconds.remainder(60),
+      ),
+    );
+  }
+
+  int getNextPrayer(List<Map<String, String>> prayerTimes) {
+    final timeNow = TimeOfDay.now();
+    for (var i = 0; i < prayerTimes.length; i++) {
+      final time = prayerTimes[i]['time']!;
+      final hour = int.parse(time.split(":")[0]);
+      final minute = int.parse(time.split(":")[1]);
+      final prayerTime = TimeOfDay(hour: hour, minute: minute);
+
+      if (prayerTime.hour > timeNow.hour ||
+          (prayerTime.hour == timeNow.hour &&
+              prayerTime.minute > timeNow.minute)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  Duration nextPrayerTimeDuration(int nextPrayer, TimeOfDay timeNow) {
+    final time = prayerTimes[nextPrayer]['time'];
+    final parts = time!.split(":");
+    final hours = int.parse(parts[0]);
+    final minutes = int.parse(parts[1]);
+    final seconds = int.parse(parts[3]);
+    Duration n = Duration(hours: hours, minutes: minutes, seconds: seconds);
+
+    // int timeInSecond = timeNow.hour * 60 * 60 + timeNow.minute * 60;
+    // int durationsecond = n.inSeconds;
+    // int def = durationsecond - timeInSecond;
+
+    return Duration(hours: hours, minutes: minutes, seconds: seconds);
+  }
+
+  Duration timeNowOnDurtion(Duration i) {
+    final now = TimeOfDay.now();
+    final String time = '${now.hour}:${now.minute}';
+    final parts = time.split(":");
+    final hours = int.parse(parts[0]);
+    final minutes = int.parse(parts[1]);
+    return Duration(hours: hours, minutes: minutes);
+  }
+
 }
