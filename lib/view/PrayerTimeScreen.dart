@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/controller/PrayerTimeController.dart';
+import 'package:myadhan/view/CountDown.dart';
 
 class PrayerTimeScreen extends StatefulWidget {
   @override
@@ -15,54 +16,42 @@ class PrayerTimeScreen extends StatefulWidget {
 
 final PrayerTimeController controller = PrayerTimeController();
 final PrayerTimes = controller.getPrayerTimes();
-Duration remaining =  ;
-Timer? timer;
+// Duration remaining = Duration(hours: 3, minutes: 32);
+// Timer? timer;
+final List<Map<String, String>> prayerTimes = [
+  {"name": "الفجر", "time": "${DateFormat('HH:mm').format(PrayerTimes.fajer)}"},
+  {"name": "الظهر", "time": "${DateFormat('HH:mm').format(PrayerTimes.dhuhr)}"},
+  {"name": "العصر", "time": "${DateFormat('HH:mm').format(PrayerTimes.asr)}"},
+  {
+    "name": "المغرب",
+    "time": "${DateFormat('HH:mm').format(PrayerTimes.maghrib)}",
+  },
+  {"name": "العشاء", "time": "${DateFormat('HH:mm').format(PrayerTimes.isha)}"},
+];
 
 class _PrayerTimeState extends State<PrayerTimeScreen> {
-  final List<Map<String, String>> prayerTimes = [
-    {
-      "name": "الفجر",
-      "time": "${DateFormat('HH:mm').format(PrayerTimes.fajer)}",
-    },
-    {
-      "name": "الظهر",
-      "time": "${DateFormat('HH:mm').format(PrayerTimes.dhuhr)}",
-    },
-    {"name": "العصر", "time": "${DateFormat('HH:mm').format(PrayerTimes.asr)}"},
-    {
-      "name": "المغرب",
-      "time": "${DateFormat('HH:mm').format(PrayerTimes.maghrib)}",
-    },
-    {
-      "name": "العشاء",
-      "time": "${DateFormat('HH:mm').format(PrayerTimes.isha)}",
-    },
-  ];
+  // @override
+  // void initState() {
+  //   // TODO: implement initState
+  //   super.initState();
+  //   timerForTheNextPrayer();
+  // }
 
-  
+  // void timerForTheNextPrayer() {
+  //   const onSecond = const Duration(seconds: 1);
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    timerForTheNextPrayer();
-  }
-
-  void timerForTheNextPrayer() {
-    const onSecond = const Duration(seconds: 1);
-
-    timer = Timer.periodic(onSecond, (_) {
-      // final second = 1;
-      setState(() {
-        remaining = remaining - Duration(seconds: 1);
-        // if (remaining.isNegative) {
-        //   getNextPrayer(prayerTimes);
-        // }
-        // final seconds = remaining.inSeconds - second;
-        // remaining = Duration(seconds: seconds);
-      });
-    });
-  }
+  //   timer = Timer.periodic(onSecond, (_) {
+  // final second = 1;
+  // setState(() {
+  //   remaining = remaining - Duration(seconds: 1);
+  // if (remaining.isNegative) {
+  //   getNextPrayer(prayerTimes);
+  // }
+  // final seconds = remaining.inSeconds - second;
+  // remaining = Duration(seconds: seconds);
+  //   });
+  // });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -159,18 +148,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                   Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
 
                   //there where i want to add countDownTimer just at the next prayer
-                  isNext
-                      ? Text(
-                        // textAlign: TextAlign.left,
-                        "${formatDurationIntl(remaining)}",
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          color: Color(0xffF0F8FF),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 18,
-                        ),
-                      )
-                      : Text(""),
+                  isNext ? CountdownTimer() : Text(""),
                   SizedBox(width: 32),
 
                   Padding(
@@ -209,19 +187,19 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
     );
   }
 
-  String formatDurationIntl(Duration duration) {
-    final format = DateFormat('HH:mm:ss');
-    return format.format(
-      DateTime(
-        0,
-        0,
-        0,
-        duration.inHours,
-        duration.inMinutes.remainder(60),
-        duration.inSeconds.remainder(60),
-      ),
-    );
-  }
+  // String formatDurationIntl(Duration duration) {
+  //   final format = DateFormat('HH:mm:ss');
+  //   return format.format(
+  //     DateTime(
+  //       0,
+  //       0,
+  //       0,
+  //       duration.inHours,
+  //       duration.inMinutes.remainder(60),
+  //       duration.inSeconds.remainder(60),
+  //     ),
+  //   );
+  // }
 
   int getNextPrayer(List<Map<String, String>> prayerTimes) {
     final timeNow = TimeOfDay.now();
@@ -237,31 +215,42 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
         return i;
       }
     }
-    return -1;
+    return 0;
   }
 
-  Duration nextPrayerTimeDuration(int nextPrayer, TimeOfDay timeNow) {
-    final time = prayerTimes[nextPrayer]['time'];
-    final parts = time!.split(":");
-    final hours = int.parse(parts[0]);
-    final minutes = int.parse(parts[1]);
-    final seconds = int.parse(parts[3]);
-    Duration n = Duration(hours: hours, minutes: minutes, seconds: seconds);
+  // Duration nextPrayerTimeDuration(int nextPrayer) {
+  //   final time = prayerTimes[nextPrayer]['time'];
+  //   final parts = time!.split(":");
+  //   final hours = int.parse(parts[0]);
+  //   final minutes = int.parse(parts[1]);
+  //   final seconds = int.parse(parts[3]);
 
-    // int timeInSecond = timeNow.hour * 60 * 60 + timeNow.minute * 60;
-    // int durationsecond = n.inSeconds;
-    // int def = durationsecond - timeInSecond;
+  //   final now = TimeOfDay.now();
+  //   final String timeNow = '${now.hour}:${now.minute}';
+  //   final partsNow = timeNow.split(":");
+  //   final hoursNow = int.parse(partsNow[0]);
+  //   final minutesNow = int.parse(partsNow[1]);
 
-    return Duration(hours: hours, minutes: minutes, seconds: seconds);
-  }
+  //   final prayertime = Duration(
+  //     hours: hours,
+  //     minutes: minutes,
+  //     seconds: seconds,
+  //   );
+  //   final Duration n = Duration(hours: hoursNow, minutes: minutesNow);
+  //   final lastDuration = prayertime - n;
+  //   // int timeInSecond = timeNow.hour * 60 * 60 + timeNow.minute * 60;
+  //   // int durationsecond = n.inSeconds;
+  //   // int def = durationsecond - timeInSecond;
 
-  Duration timeNowOnDurtion(Duration i) {
-    final now = TimeOfDay.now();
-    final String time = '${now.hour}:${now.minute}';
-    final parts = time.split(":");
-    final hours = int.parse(parts[0]);
-    final minutes = int.parse(parts[1]);
-    return Duration(hours: hours, minutes: minutes);
-  }
+  //   return lastDuration;
+  // }
 
+  // Duration timeNowOnDurti() {
+  //   final now = TimeOfDay.now();
+  //   final String time = '${now.hour}:${now.minute}';
+  //   final parts = time.split(":");
+  //   final hours = int.parse(parts[0]);
+  //   final minutes = int.parse(parts[1]);
+  //   return Duration(hours: hours, minutes: minutes);
+  // }
 }
