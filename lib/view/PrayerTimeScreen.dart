@@ -1,8 +1,8 @@
-import 'dart:async';
+// import 'dart:async';
 import 'dart:ui';
 
 // import 'package:adhan/adhan.dart';
-import 'package:adhan/adhan.dart';
+// import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -149,7 +149,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
 
                   //there where i want to add countDownTimer just at the next prayer
                   isNext ? CountdownTimer() : Text(""),
-                  SizedBox(width: 32),
+                  SizedBox(width: 64),
 
                   Padding(
                     padding: const EdgeInsets.only(right: 6),

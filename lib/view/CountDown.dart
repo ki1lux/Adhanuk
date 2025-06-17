@@ -54,8 +54,8 @@ Duration nextPrayerTimeDuration(int nextPrayer) {
   final hoursNow = int.parse(partsNow[0]);
   final minutesNow = int.parse(partsNow[1]);
 
-  final hourfinal = hours - hoursNow;
-  final minutefinal = minutes - minutesNow;
+  // final hourfinal = hours - hoursNow;
+  // final minutefinal = minutes - minutesNow;
 
   final prayertime = Duration(hours: hours, minutes: minutes);
   final Duration n = Duration(hours: hoursNow, minutes: minutesNow);
@@ -66,12 +66,10 @@ Duration nextPrayerTimeDuration(int nextPrayer) {
 }
 
 class _CountdownTimerState extends State<CountdownTimer> {
-  // Duration remaining = Duration(hours: 5, minutes: 32);
   late Timer timer;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     timerForTheNextPrayer();
   }
