@@ -38,6 +38,7 @@ dependencies:
   adhan: ^2.0.0+1
   intl: ^0.20.2
   flutter_svg: ^2.1.0
+  geocoding: ^4.0.0
 
 dev_dependencies:
   flutter_test:

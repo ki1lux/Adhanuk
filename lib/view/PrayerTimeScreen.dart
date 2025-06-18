@@ -5,7 +5,10 @@ import 'dart:ui';
 // import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:myadhan/controller/LocationController.dart';
 import 'package:myadhan/controller/PrayerTimeController.dart';
 import 'package:myadhan/view/CountDown.dart';
 
@@ -30,12 +33,38 @@ final List<Map<String, String>> prayerTimes = [
 ];
 
 class _PrayerTimeState extends State<PrayerTimeScreen> {
-  // @override
-  // void initState() {
-  //   // TODO: implement initState
-  //   super.initState();
-  //   timerForTheNextPrayer();
-  // }
+  final LocationController _controller = LocationController();
+  String countryLocationText = "fetching location...";
+  String cityLocationText = "fetching location...";
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    fetchLoction();
+  }
+
+  Future<void> fetchLoction() async {
+    try {
+      Position position = await _controller.determinePosition();
+      List<Placemark> placemark = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      Placemark place = placemark[0];
+      setState(() {
+        // locationText = " ${position.latitude}\n ${position.longitude}";
+
+        countryLocationText = "${place.country}";
+        cityLocationText = "${place.locality}";
+
+      });
+    } catch (e) {
+      setState(() {
+        countryLocationText = " خطأ \n $e";
+        cityLocationText = " خطأ \n $e";
+      });
+    }
+  }
 
   // void timerForTheNextPrayer() {
   //   const onSecond = const Duration(seconds: 1);
@@ -81,7 +110,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
 
                       children: [
                         Text(
-                          "الموقع",
+                          countryLocationText,
                           style: TextStyle(
                             color: Color(0xffF0F8FF),
                             fontFamily: 'Cairo',
@@ -91,7 +120,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                         ),
 
                         Text(
-                          "الجزائر",
+                          cityLocationText,
                           style: TextStyle(
                             color: Color(0xffF0F8FF),
                             fontFamily: 'Cairo',
