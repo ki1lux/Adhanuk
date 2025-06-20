@@ -1,5 +1,4 @@
 import 'package:adhan/adhan.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:myadhan/controller/LocationController.dart';
 // import 'package:geolocator/geolocator.dart';
@@ -33,11 +32,11 @@ class PrayerTimeController {
   Future<PrayerTimeModel> getPrayerTimes() async {
     try{
       Position position = await getPosition();
-    final batnaCoordinates = Coordinates(position.latitude, position.longitude);
+    final userCoordinates = Coordinates(position.latitude, position.longitude);
 
     final params = CalculationMethod.karachi.getParameters();
     params.madhab = Madhab.shafi;
-    final prayerTimes = PrayerTimes.today(batnaCoordinates, params);
+    final prayerTimes = PrayerTimes.today(userCoordinates, params);
     return PrayerTimeModel(
       fajer: prayerTimes.fajr,
       dhuhr: prayerTimes.dhuhr,

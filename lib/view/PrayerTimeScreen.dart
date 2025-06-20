@@ -2,10 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/controller/LocationController.dart';
-import 'package:myadhan/controller/PrayerTimeController.dart';
 import 'package:myadhan/view/CountDown.dart';
 
 class PrayerTimeScreen extends StatefulWidget {
@@ -13,24 +11,12 @@ class PrayerTimeScreen extends StatefulWidget {
   _PrayerTimeState createState() => _PrayerTimeState();
 }
 
-// final PrayerTimeController controller = PrayerTimeController();
-// final PrayerTimes = controller.getPrayerTimes();
-// final List<Map<String, String>> prayerTimes = [
-//   {"name": "الفجر", "time": "${DateFormat('HH:mm').format(PrayerTimes.fajer)}"},
-//   {"name": "الظهر", "time": "${DateFormat('HH:mm').format(PrayerTimes.dhuhr)}"},
-//   {"name": "العصر", "time": "${DateFormat('HH:mm').format(PrayerTimes.asr)}"},
-//   {
-//     "name": "المغرب",
-//     "time": "${DateFormat('HH:mm').format(PrayerTimes.maghrib)}",
-//   },
-//   {"name": "العشاء", "time": "${DateFormat('HH:mm').format(PrayerTimes.isha)}"},
-// ];
 
 class _PrayerTimeState extends State<PrayerTimeScreen> {
   final LocationController _controller = LocationController();
   String countryLocationText = "fetching location...";
   String cityLocationText = "fetching location...";
-  Position? _position;
+  
   @override
   void initState() {
     // TODO: implement initState
@@ -62,7 +48,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
         position.longitude,
       );
       setState(() {
-        _position = position;
+        
         countryLocationText = placemark[0].country ?? "";
         cityLocationText = placemark[0].locality ?? "";
       });

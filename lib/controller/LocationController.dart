@@ -24,7 +24,9 @@ class LocationController {
       );
     }
 
-    return await Geolocator.getCurrentPosition();
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.best,
+    );
   }
 
   Future<Map<String, String>> getLocationDetails() async {
