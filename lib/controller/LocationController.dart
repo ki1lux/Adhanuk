@@ -1,3 +1,4 @@
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LocationController {
@@ -22,6 +23,24 @@ class LocationController {
         'Location permissions are permanently denied, we cannot request permissions.',
       );
     }
+
     return await Geolocator.getCurrentPosition();
+  }
+
+  Future<Map<String, String>> getLocationDetails() async {
+    try {
+      Position position = await determinePosition();
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      Placemark placemark = placemarks[0];
+      return {
+        "country": placemark.country ?? "not detected",
+        "city": placemark.locality ?? "not detected",
+      };
+    } catch (e) {
+      throw Exception("Location error: $e");
+    }
   }
 }

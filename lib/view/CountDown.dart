@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/controller/PrayerTimeController.dart';
 
@@ -10,19 +11,10 @@ class CountdownTimer extends StatefulWidget {
 }
 
 final PrayerTimeController controller = PrayerTimeController();
+// Position position = Position.fromMap();
 final PrayerTimes = controller.getPrayerTimes();
-Duration remaining = nextPrayerTimeDuration(getNextPrayer(prayerTimes));
+Duration remaining = Duration.zero;
 Timer? timer;
-final List<Map<String, String>> prayerTimes = [
-  {"name": "الفجر", "time": "${DateFormat('HH:mm').format(PrayerTimes.fajer)}"},
-  {"name": "الظهر", "time": "${DateFormat('HH:mm').format(PrayerTimes.dhuhr)}"},
-  {"name": "العصر", "time": "${DateFormat('HH:mm').format(PrayerTimes.asr)}"},
-  {
-    "name": "المغرب",
-    "time": "${DateFormat('HH:mm').format(PrayerTimes.maghrib)}",
-  },
-  {"name": "العشاء", "time": "${DateFormat('HH:mm').format(PrayerTimes.isha)}"},
-];
 
 int getNextPrayer(List<Map<String, String>> prayerTimes) {
   final timeNow = TimeOfDay.now();
@@ -41,28 +33,20 @@ int getNextPrayer(List<Map<String, String>> prayerTimes) {
   return 0;
 }
 
-Duration nextPrayerTimeDuration(int nextPrayer) {
-  final time = prayerTimes[nextPrayer]['time'];
-  final parts = time!.split(":");
+Duration nextPrayerTimeDuration(
+  List<Map<String, String>> prayerTimes,
+  int nextPrayer,
+) {
+  final time = prayerTimes[nextPrayer]['time']!;
+  final parts = time.split(":");
   final hours = int.parse(parts[0]);
   final minutes = int.parse(parts[1]);
-  // final seconds = int.parse(parts[3]);
 
   final now = TimeOfDay.now();
-  final String timeNow = '${now.hour}:${now.minute}';
-  final partsNow = timeNow.split(":");
-  final hoursNow = int.parse(partsNow[0]);
-  final minutesNow = int.parse(partsNow[1]);
+  final currentDuration = Duration(hours: now.hour, minutes: now.minute);
+  final nextDuration = Duration(hours: hours, minutes: minutes);
 
-  // final hourfinal = hours - hoursNow;
-  // final minutefinal = minutes - minutesNow;
-
-  final prayertime = Duration(hours: hours, minutes: minutes);
-  final Duration n = Duration(hours: hoursNow, minutes: minutesNow);
-  Duration lastDuration = prayertime - n;
-  // Duration lastDuration = Duration(hours: hours, minutes: minutes);
-
-  return lastDuration;
+  return nextDuration - currentDuration;
 }
 
 class _CountdownTimerState extends State<CountdownTimer> {
@@ -71,18 +55,56 @@ class _CountdownTimerState extends State<CountdownTimer> {
   @override
   void initState() {
     super.initState();
-    timerForTheNextPrayer();
+    // timerForTheNextPrayer();
+    loadPrayerTimesAndStartCountdown();
   }
 
-  void timerForTheNextPrayer() {
-    const onSecond = const Duration(seconds: 1);
+  Future<void> loadPrayerTimesAndStartCountdown() async {
+    final prayerTimesData = await controller.getPrayerTimes();
 
-    timer = Timer.periodic(onSecond, (_) {
+    final List<Map<String, String>> prayerTimes = [
+      {
+        "name": "الفجر",
+        "time": DateFormat('HH:mm').format(prayerTimesData.fajer),
+      },
+      {
+        "name": "الظهر",
+        "time": DateFormat('HH:mm').format(prayerTimesData.dhuhr),
+      },
+      {
+        "name": "العصر",
+        "time": DateFormat('HH:mm').format(prayerTimesData.asr),
+      },
+      {
+        "name": "المغرب",
+        "time": DateFormat('HH:mm').format(prayerTimesData.maghrib),
+      },
+      {
+        "name": "العشاء",
+        "time": DateFormat('HH:mm').format(prayerTimesData.isha),
+      },
+    ];
+
+    int nextIndex = getNextPrayer(prayerTimes);
+    remaining = nextPrayerTimeDuration(prayerTimes, nextIndex);
+
+    timer = Timer.periodic(Duration(seconds: 1), (_) {
       setState(() {
-        remaining = remaining - Duration(seconds: 1);
+        remaining -= Duration(seconds: 1);
+        if (remaining.isNegative) remaining = Duration.zero;
       });
     });
   }
+
+  // void timerForTheNextPrayer() {
+  //   const onSecond = const Duration(seconds: 1);
+
+  //   timer = Timer.periodic(onSecond, (_) {
+  //     setState(() {
+  //       remaining = remaining - Duration(seconds: 1);
+  //     });
+  //   });
+  // }
 
   @override
   void dispose() {

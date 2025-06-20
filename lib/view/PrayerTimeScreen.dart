@@ -1,8 +1,4 @@
-// import 'dart:async';
 import 'dart:ui';
-
-// import 'package:adhan/adhan.dart';
-// import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
@@ -17,75 +13,71 @@ class PrayerTimeScreen extends StatefulWidget {
   _PrayerTimeState createState() => _PrayerTimeState();
 }
 
-final PrayerTimeController controller = PrayerTimeController();
-final PrayerTimes = controller.getPrayerTimes();
-// Duration remaining = Duration(hours: 3, minutes: 32);
-// Timer? timer;
-final List<Map<String, String>> prayerTimes = [
-  {"name": "الفجر", "time": "${DateFormat('HH:mm').format(PrayerTimes.fajer)}"},
-  {"name": "الظهر", "time": "${DateFormat('HH:mm').format(PrayerTimes.dhuhr)}"},
-  {"name": "العصر", "time": "${DateFormat('HH:mm').format(PrayerTimes.asr)}"},
-  {
-    "name": "المغرب",
-    "time": "${DateFormat('HH:mm').format(PrayerTimes.maghrib)}",
-  },
-  {"name": "العشاء", "time": "${DateFormat('HH:mm').format(PrayerTimes.isha)}"},
-];
+// final PrayerTimeController controller = PrayerTimeController();
+// final PrayerTimes = controller.getPrayerTimes();
+// final List<Map<String, String>> prayerTimes = [
+//   {"name": "الفجر", "time": "${DateFormat('HH:mm').format(PrayerTimes.fajer)}"},
+//   {"name": "الظهر", "time": "${DateFormat('HH:mm').format(PrayerTimes.dhuhr)}"},
+//   {"name": "العصر", "time": "${DateFormat('HH:mm').format(PrayerTimes.asr)}"},
+//   {
+//     "name": "المغرب",
+//     "time": "${DateFormat('HH:mm').format(PrayerTimes.maghrib)}",
+//   },
+//   {"name": "العشاء", "time": "${DateFormat('HH:mm').format(PrayerTimes.isha)}"},
+// ];
 
 class _PrayerTimeState extends State<PrayerTimeScreen> {
   final LocationController _controller = LocationController();
   String countryLocationText = "fetching location...";
   String cityLocationText = "fetching location...";
+  Position? _position;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    fetchLoction();
+    // fetchLocation();
+    initEverything();
   }
 
-  Future<void> fetchLoction() async {
+  // Future<void> fetchLocation() async {
+  //   try {
+  //     final location = await _controller.getLocationDetails();
+  //     setState(() {
+  //       countryLocationText = location["country"]!;
+  //       cityLocationText = location["city"]!;
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       countryLocationText = "خطأ: $e";
+  //       cityLocationText = "خطأ: $e";
+  //     });
+  //   }
+  // }
+
+  Future<void> initEverything() async {
     try {
-      Position position = await _controller.determinePosition();
-      List<Placemark> placemark = await placemarkFromCoordinates(
+      final position = await _controller.determinePosition();
+      final placemark = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
       );
-      Placemark place = placemark[0];
       setState(() {
-        // locationText = " ${position.latitude}\n ${position.longitude}";
-
-        countryLocationText = "${place.country}";
-        cityLocationText = "${place.locality}";
-
+        _position = position;
+        countryLocationText = placemark[0].country ?? "";
+        cityLocationText = placemark[0].locality ?? "";
       });
     } catch (e) {
       setState(() {
-        countryLocationText = " خطأ \n $e";
-        cityLocationText = " خطأ \n $e";
+        countryLocationText = "خطأ في تحديد الموقع";
+        cityLocationText = "$e";
       });
     }
   }
 
-  // void timerForTheNextPrayer() {
-  //   const onSecond = const Duration(seconds: 1);
-
-  //   timer = Timer.periodic(onSecond, (_) {
-  // final second = 1;
-  // setState(() {
-  //   remaining = remaining - Duration(seconds: 1);
-  // if (remaining.isNegative) {
-  //   getNextPrayer(prayerTimes);
-  // }
-  // final seconds = remaining.inSeconds - second;
-  // remaining = Duration(seconds: seconds);
-  //   });
-  // });
-  // }
-
   @override
   Widget build(BuildContext context) {
-    int nextIndex = getNextPrayer(prayerTimes);
-
+    // int nextIndex = getNextPrayer(prayerTimes);
+    // final PrayerTimeController controller = PrayerTimeController();
     // TODO: implement build
     return Scaffold(
       body: Stack(
@@ -97,8 +89,10 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
             width: double.infinity,
             height: double.infinity,
           ),
+
           Column(
             children: [
+              // الموقع
               Padding(
                 padding: EdgeInsets.only(right: 16, top: 89),
                 child: Row(
@@ -107,7 +101,6 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
-
                       children: [
                         Text(
                           countryLocationText,
@@ -118,7 +111,6 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         Text(
                           cityLocationText,
                           style: TextStyle(
@@ -135,17 +127,59 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                 ),
               ),
               SizedBox(height: 64),
-              Column(
-                children:
-                    prayerTimes.asMap().entries.map((entry) {
-                      int i = entry.key;
-                      var prayer = entry.value;
-                      return prayerCard(
-                        prayer["name"]!,
-                        prayer["time"]!,
-                        i == nextIndex,
-                      );
-                    }).toList(),
+
+              FutureBuilder(
+                future: controller.getPrayerTimes(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("خطأ: ${snapshot.error}"));
+                  } else if (!snapshot.hasData) {
+                    return Center(child: Text("لم يتم العثور على البيانات"));
+                  }
+
+                  final prayerTimesData = snapshot.data!;
+                  final List<Map<String, String>> prayerTimes = [
+                    {
+                      "name": "الفجر",
+                      "time": DateFormat('HH:mm').format(prayerTimesData.fajer),
+                    },
+                    {
+                      "name": "الظهر",
+                      "time": DateFormat('HH:mm').format(prayerTimesData.dhuhr),
+                    },
+                    {
+                      "name": "العصر",
+                      "time": DateFormat('HH:mm').format(prayerTimesData.asr),
+                    },
+                    {
+                      "name": "المغرب",
+                      "time": DateFormat(
+                        'HH:mm',
+                      ).format(prayerTimesData.maghrib),
+                    },
+                    {
+                      "name": "العشاء",
+                      "time": DateFormat('HH:mm').format(prayerTimesData.isha),
+                    },
+                  ];
+
+                  int nextIndex = getNextPrayer(prayerTimes);
+
+                  return Column(
+                    children:
+                        prayerTimes.asMap().entries.map((entry) {
+                          int i = entry.key;
+                          var prayer = entry.value;
+                          return prayerCard(
+                            prayer["name"]!,
+                            prayer["time"]!,
+                            i == nextIndex,
+                          );
+                        }).toList(),
+                  );
+                },
               ),
             ],
           ),
