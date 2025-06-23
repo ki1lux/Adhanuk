@@ -7,10 +7,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-// import 'package:flutter_svg/svg.dart';
-// import 'package:myadhan/view/AnalogClockView.dart';
-// import 'package:geolocator/geolocator.dart';
-// import 'package:adhan/adhan.dart';
 import 'package:myadhan/view/adhan_screen.dart';
 // import 'package:myadhan/test.dart';
 

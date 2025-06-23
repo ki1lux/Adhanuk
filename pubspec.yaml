@@ -68,6 +68,7 @@ flutter:
     - assets/h1.svg
     - assets/h2.svg
     - assets/h3.svg
+    - assets/ka3ba.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
