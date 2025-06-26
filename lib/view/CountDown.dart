@@ -9,7 +9,6 @@ class CountdownTimer extends StatefulWidget {
 }
 
 final PrayerTimeController controller = PrayerTimeController();
-// Position position = Position.fromMap();
 final PrayerTimes = controller.getPrayerTimes();
 Duration remaining = Duration.zero;
 Timer? timer;
@@ -53,7 +52,6 @@ class _CountdownTimerState extends State<CountdownTimer> {
   @override
   void initState() {
     super.initState();
-    // timerForTheNextPrayer();
     loadPrayerTimesAndStartCountdown();
   }
 
@@ -85,24 +83,18 @@ class _CountdownTimerState extends State<CountdownTimer> {
 
     int nextIndex = getNextPrayer(prayerTimes);
     remaining = nextPrayerTimeDuration(prayerTimes, nextIndex);
-
+    Duration iqamaTime = Duration(minutes: 20) * -1;
     timer = Timer.periodic(Duration(seconds: 1), (_) {
       setState(() {
+        
         remaining -= Duration(seconds: 1);
-        if (remaining.isNegative) remaining = Duration.zero;
+        if (remaining < iqamaTime) {
+          timer.cancel();
+          loadPrayerTimesAndStartCountdown();
+        };
       });
     });
   }
-
-  // void timerForTheNextPrayer() {
-  //   const onSecond = const Duration(seconds: 1);
-
-  //   timer = Timer.periodic(onSecond, (_) {
-  //     setState(() {
-  //       remaining = remaining - Duration(seconds: 1);
-  //     });
-  //   });
-  // }
 
   @override
   void dispose() {

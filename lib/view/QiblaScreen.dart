@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myadhan/view/CompassView.dart';
 
 class QiblaScreen extends StatefulWidget {
   @override
@@ -30,7 +31,18 @@ class _QiblaScreenState extends State<QiblaScreen> {
                 ),
               ),
             ),
-            // CompassView(),
+            // Positioned(
+            //   top: 38,
+            //   child: Text(
+            //     "N",
+            //     style: TextStyle(
+            //       color: Colors.black,
+            //       fontSize: 32,
+            //       fontWeight: FontWeight.w500,
+            //     ),
+            //   ),
+            // ),
+            Compassview(),
           ],
         ),
       ),
