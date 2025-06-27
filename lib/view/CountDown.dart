@@ -4,6 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:myadhan/controller/PrayerTimeController.dart';
 
 class CountdownTimer extends StatefulWidget {
+ final VoidCallback onFinish;
+
+const CountdownTimer({required this.onFinish, Key? key}) : super(key: key);
+
   @override
   _CountdownTimerState createState() => _CountdownTimerState();
 }
@@ -57,7 +61,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
 
   Future<void> loadPrayerTimesAndStartCountdown() async {
     final prayerTimesData = await controller.getPrayerTimes();
-
+    bool isIqama = true;
     final List<Map<String, String>> prayerTimes = [
       {
         "name": "الفجر",
@@ -83,15 +87,22 @@ class _CountdownTimerState extends State<CountdownTimer> {
 
     int nextIndex = getNextPrayer(prayerTimes);
     remaining = nextPrayerTimeDuration(prayerTimes, nextIndex);
-    Duration iqamaTime = Duration(minutes: 20) * -1;
+    Duration iqamaTime = Duration(hours: 0, minutes: 0, seconds: 0);
     timer = Timer.periodic(Duration(seconds: 1), (_) {
       setState(() {
-        
         remaining -= Duration(seconds: 1);
-        if (remaining < iqamaTime) {
+        if (remaining == iqamaTime && isIqama) {
+          if (remaining == iqamaTime) {
+            isIqama = false;
+          }
+          remaining = Duration(minutes: 1);
+        }
+        if (remaining == iqamaTime && (!isIqama)) {
           timer.cancel();
           loadPrayerTimesAndStartCountdown();
-        };
+          widget.onFinish();
+        }
+        ;
       });
     });
   }

@@ -39,7 +39,7 @@ dependencies:
   intl: ^0.20.2
   flutter_svg: ^2.1.0
   geocoding: ^4.0.0
-  flutter_qiblah: ^3.0.3
+  
 
 dev_dependencies:
   flutter_test:

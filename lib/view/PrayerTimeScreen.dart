@@ -196,8 +196,14 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                 children: [
                   Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
 
-                  //there where i want to add countDownTimer just at the next prayer
-                  isNext ? CountdownTimer() : Text(""),
+                  
+                  isNext ? CountdownTimer(
+                        onFinish: () {
+                          setState(() {
+                            prayerCard(name, time, isNext); // Your method to update name/time/isNext etc.
+                          });
+                        },
+                      ) : Text(""),
                   SizedBox(width: 64),
 
                   Padding(
