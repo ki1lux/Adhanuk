@@ -39,6 +39,9 @@ dependencies:
   intl: ^0.20.2
   flutter_svg: ^2.1.0
   geocoding: ^4.0.0
+  flutter_qiblah: ^3.0.3
+  location: ^5.0.3
+  permission_handler: ^11.0.1
   
 
 dev_dependencies:
@@ -70,6 +73,7 @@ flutter:
     - assets/h2.svg
     - assets/h3.svg
     - assets/ka3ba.png
+    - assets/qiblahanim.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

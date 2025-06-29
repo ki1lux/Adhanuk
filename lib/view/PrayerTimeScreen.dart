@@ -11,12 +11,11 @@ class PrayerTimeScreen extends StatefulWidget {
   _PrayerTimeState createState() => _PrayerTimeState();
 }
 
-
 class _PrayerTimeState extends State<PrayerTimeScreen> {
   final LocationController _controller = LocationController();
   String countryLocationText = "fetching location...";
   String cityLocationText = "fetching location...";
-  
+
   @override
   void initState() {
     // TODO: implement initState
@@ -48,7 +47,6 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
         position.longitude,
       );
       setState(() {
-        
         countryLocationText = placemark[0].country ?? "";
         cityLocationText = placemark[0].locality ?? "";
       });
@@ -196,14 +194,15 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                 children: [
                   Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
 
-                  
-                  isNext ? CountdownTimer(
+                  isNext
+                      ? CountdownTimer(
                         onFinish: () {
                           setState(() {
-                            prayerCard(name, time, isNext); // Your method to update name/time/isNext etc.
+                             // Your method to update name/time/isNext etc.
                           });
                         },
-                      ) : Text(""),
+                      )
+                      : Text(""),
                   SizedBox(width: 64),
 
                   Padding(
