@@ -34,15 +34,15 @@ class _QiblaScreenState extends State<QiblaScreen> {
                 return Center(child: CircularProgressIndicator());
               }
               final tdirection = snapshot.data;
-              
+
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Transform.rotate(angle: tdirection.direction * (pi / 180),
-                    child: Image.asset("assets/qiblahanim.png" ,width: 100,),
+                    Transform.rotate(
+                      angle: ((tdirection.qiblah ?? 0) * (pi / 180) * -1),
+                      child: Image.asset("assets/qiblahanim.png", width: 250),
                     ),
-
                   ],
                 ),
               );
