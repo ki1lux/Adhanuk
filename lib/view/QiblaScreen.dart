@@ -33,15 +33,48 @@ class _QiblaScreenState extends State<QiblaScreen> {
               if (!snapshot.hasData) {
                 return Center(child: CircularProgressIndicator());
               }
-              final tdirection = snapshot.data;
+              final qiblahDirection = snapshot.data;
 
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Stack(
                   children: [
-                    Transform.rotate(
-                      angle: ((tdirection.qiblah ?? 0) * (pi / 180) * -1),
-                      child: Image.asset("assets/qiblahanim.png", width: 250),
+                    Positioned(
+                      top: -70,
+                      bottom: -70,
+                      left: -70,
+                      right: -70,
+                      child: Transform.rotate(
+                        angle:
+                            ((qiblahDirection.direction ?? 0) *
+                                (pi / 180) *
+                                -1),
+                        child: Image.asset("assets/normal_compass.png"),
+                      ),
+                    ),
+
+                    Positioned(
+                      top: 100,
+                      bottom: 100,
+                      left: 100,
+                      right: 100,
+                      child: Transform.rotate(
+                        angle:
+                            ((qiblahDirection.qiblah ?? 0) * (pi / 180) * -1),
+                        child: Image.asset("assets/qiblahanim1.png"),
+                      ),
+                    ),
+                    Center(
+                      child: Positioned(
+                        bottom: 8,
+                        child: Text(
+                          "${qiblahDirection.offset.toStringAsFixed(0)}°",
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontFamily: 'cairo',
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

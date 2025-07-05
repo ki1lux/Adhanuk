@@ -73,7 +73,8 @@ flutter:
     - assets/h2.svg
     - assets/h3.svg
     - assets/ka3ba.png
-    - assets/qiblahanim.png
+    - assets/qiblahanim1.png
+    - assets/normal_compass.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
