@@ -1,7 +1,7 @@
 import 'package:flutter_qiblah/flutter_qiblah.dart';
 
 class QiblahModel {
-  Stream<QiblahDirection> getQiblaStream() {
+  Stream getQiblaStream() {
     return FlutterQiblah.qiblahStream;
   }
 
