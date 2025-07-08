@@ -63,7 +63,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
                     Center(
                       child: Text(
-                        " ${qiblahDirection.offset.toStringAsFixed(0)}°",
+                        " ${qiblahDirection.direction.toStringAsFixed(0)}°",
                         style: TextStyle(
                           fontSize: 28,
                           fontFamily: 'cairo',
