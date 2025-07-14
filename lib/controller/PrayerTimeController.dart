@@ -1,4 +1,5 @@
 import 'package:adhan/adhan.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:myadhan/controller/LocationController.dart';
 // import 'package:geolocator/geolocator.dart';
@@ -7,6 +8,10 @@ import 'package:myadhan/model/PrayerTimeModel.dart';
 
 class PrayerTimeController {
   final LocationController _controller = LocationController();
+   static const MethodChannel _channel = MethodChannel(
+    'com.myadhan/notification',
+  );
+
   Future<Position> getPosition() async {
     Position position = await _controller.determinePosition();
     return position;
@@ -49,4 +54,15 @@ class PrayerTimeController {
     }
     
   }
+
+  Future<void> callNativeAdhanNow(String prayerName) async {
+    try {
+      await _channel.invokeMethod('showFullScreenAdhan', {
+        'prayerName': prayerName,
+      });
+    } catch (e) {
+      print("Error calling native Adhan: $e");
+    }
+  }
+  
 }
