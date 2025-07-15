@@ -95,7 +95,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
           if (remaining == iqamaTime) {
             isIqama = false;
           }
-          remaining = Duration(minutes: 1);
+          remaining = Duration(minutes: 15);
         }
         if (remaining == iqamaTime && (!isIqama)) {
           timer.cancel();

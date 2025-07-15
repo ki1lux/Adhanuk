@@ -8,7 +8,14 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <uses-library android:name="org.apache.http.legacy" android:required="false"/>
-        <activity
+
+            <activity android:name=".AdhanActivity"
+                android:showWhenLocked="true"
+                android:turnScreenOn="true"
+                android:exported="true"
+                android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+
+            <activity
         
             android:name=".MainActivity"
             android:exported="true"
