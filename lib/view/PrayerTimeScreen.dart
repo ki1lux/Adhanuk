@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/controller/LocationController.dart';
+import 'package:myadhan/controller/PrayerTimeController.dart';
+// import 'package:myadhan/model/PrayerTimeModel.dart';
 import 'package:myadhan/view/CountDown.dart';
 
 class PrayerTimeScreen extends StatefulWidget {
@@ -13,31 +15,22 @@ class PrayerTimeScreen extends StatefulWidget {
 
 class _PrayerTimeState extends State<PrayerTimeScreen> {
   final LocationController _controller = LocationController();
+  final PrayerTimeController prayerController = PrayerTimeController();
+
   String countryLocationText = "fetching location...";
   String cityLocationText = "fetching location...";
 
+  // PrayerTimeModel? _prayerTimes;
+  List<Map<String, String>> prayerTimesList = [];
+  bool isLoading = true;
+  String error = "";
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    // fetchLocation();
     initEverything();
+    loadPrayerTimesOnce();
   }
-
-  // Future<void> fetchLocation() async {
-  //   try {
-  //     final location = await _controller.getLocationDetails();
-  //     setState(() {
-  //       countryLocationText = location["country"]!;
-  //       cityLocationText = location["city"]!;
-  //     });
-  //   } catch (e) {
-  //     setState(() {
-  //       countryLocationText = "خطأ: $e";
-  //       cityLocationText = "خطأ: $e";
-  //     });
-  //   }
-  // }
 
   Future<void> initEverything() async {
     try {
@@ -58,118 +51,40 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // int nextIndex = getNextPrayer(prayerTimes);
-    // final PrayerTimeController controller = PrayerTimeController();
-    // TODO: implement build
-    return Scaffold(
-      body: Stack(
-        children: [
-          Container(color: Color(0xff0A2239)),
-          SvgPicture.asset(
-            'assets/Vector.svg',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
+  Future<void> loadPrayerTimesOnce() async {
+    try {
+      final data = await prayerController.getPrayerTimes();
+      // _prayerTimes = data;
+      prayerTimesList = [
+        {"name": "الفجر", "time": DateFormat('HH:mm').format(data.fajer)},
+        {"name": "الظهر", "time": DateFormat('HH:mm').format(data.dhuhr)},
+        {"name": "العصر", "time": DateFormat('HH:mm').format(data.asr)},
+        {"name": "المغرب", "time": DateFormat('HH:mm').format(data.maghrib)},
+        {"name": "العشاء", "time": DateFormat('HH:mm').format(data.isha)},
+      ];
+      setState(() => isLoading = false);
+    } catch (e) {
+      setState(() {
+        error = e.toString();
+        isLoading = false;
+      });
+    }
+  }
 
-          Column(
-            children: [
-              // الموقع
-              Padding(
-                padding: EdgeInsets.only(right: 16, top: 89),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          countryLocationText,
-                          style: TextStyle(
-                            color: Color(0xffF0F8FF),
-                            fontFamily: 'Cairo',
-                            fontSize: 38,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          cityLocationText,
-                          style: TextStyle(
-                            color: Color(0xffF0F8FF),
-                            fontFamily: 'Cairo',
-                            fontSize: 24,
-                            fontWeight: FontWeight.w100,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Icon(Icons.location_on, color: Color(0xffF0F8FF), size: 42),
-                  ],
-                ),
-              ),
-              SizedBox(height: 64),
-
-              FutureBuilder(
-                future: controller.getPrayerTimes(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text("خطأ: ${snapshot.error}"));
-                  } else if (!snapshot.hasData) {
-                    return Center(child: Text("لم يتم العثور على البيانات"));
-                  }
-
-                  final prayerTimesData = snapshot.data!;
-                  final List<Map<String, String>> prayerTimes = [
-                    {
-                      "name": "الفجر",
-                      "time": DateFormat('HH:mm').format(prayerTimesData.fajer),
-                    },
-                    {
-                      "name": "الظهر",
-                      "time": DateFormat('HH:mm').format(prayerTimesData.dhuhr),
-                    },
-                    {
-                      "name": "العصر",
-                      "time": DateFormat('HH:mm').format(prayerTimesData.asr),
-                    },
-                    {
-                      "name": "المغرب",
-                      "time": DateFormat(
-                        'HH:mm',
-                      ).format(prayerTimesData.maghrib),
-                    },
-                    {
-                      "name": "العشاء",
-                      "time": DateFormat('HH:mm').format(prayerTimesData.isha),
-                    },
-                  ];
-
-                  int nextIndex = getNextPrayer(prayerTimes);
-
-                  return Column(
-                    children:
-                        prayerTimes.asMap().entries.map((entry) {
-                          int i = entry.key;
-                          var prayer = entry.value;
-                          return prayerCard(
-                            prayer["name"]!,
-                            prayer["time"]!,
-                            i == nextIndex,
-                          );
-                        }).toList(),
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  int getNextPrayer(List<Map<String, String>> prayerTimes) {
+    final timeNow = TimeOfDay.now();
+    for (var i = 0; i < prayerTimes.length; i++) {
+      final time = prayerTimes[i]['time']!;
+      final hour = int.parse(time.split(":")[0]);
+      final minute = int.parse(time.split(":")[1]);
+      final prayerTime = TimeOfDay(hour: hour, minute: minute);
+      if (prayerTime.hour > timeNow.hour ||
+          (prayerTime.hour == timeNow.hour &&
+              prayerTime.minute > timeNow.minute)) {
+        return i;
+      }
+    }
+    return 0;
   }
 
   Widget prayerCard(String name, String time, bool isNext) {
@@ -181,7 +96,6 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
           filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
           child: Container(
             height: 76,
-            // padding: EdgeInsets.symmetric(vertical: 18),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.03),
               borderRadius: BorderRadius.circular(36),
@@ -193,8 +107,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
-
-                  isNext
+                 isNext
                       ? CountdownTimer(
                         onFinish: () {
                           setState(() {
@@ -204,7 +117,6 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                       )
                       : Text(""),
                   SizedBox(width: 64),
-
                   Padding(
                     padding: const EdgeInsets.only(right: 6),
                     child: Column(
@@ -241,70 +153,75 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
     );
   }
 
-  // String formatDurationIntl(Duration duration) {
-  //   final format = DateFormat('HH:mm:ss');
-  //   return format.format(
-  //     DateTime(
-  //       0,
-  //       0,
-  //       0,
-  //       duration.inHours,
-  //       duration.inMinutes.remainder(60),
-  //       duration.inSeconds.remainder(60),
-  //     ),
-  //   );
-  // }
-
-  int getNextPrayer(List<Map<String, String>> prayerTimes) {
-    final timeNow = TimeOfDay.now();
-    for (var i = 0; i < prayerTimes.length; i++) {
-      final time = prayerTimes[i]['time']!;
-      final hour = int.parse(time.split(":")[0]);
-      final minute = int.parse(time.split(":")[1]);
-      final prayerTime = TimeOfDay(hour: hour, minute: minute);
-
-      if (prayerTime.hour > timeNow.hour ||
-          (prayerTime.hour == timeNow.hour &&
-              prayerTime.minute > timeNow.minute)) {
-        return i;
-      }
-    }
-    return 0;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          Container(color: Color(0xff0A2239)),
+          SvgPicture.asset(
+            'assets/Vector.svg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+          Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(right: 16, top: 89),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          countryLocationText,
+                          style: TextStyle(
+                            color: Color(0xffF0F8FF),
+                            fontFamily: 'Cairo',
+                            fontSize: 38,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          cityLocationText,
+                          style: TextStyle(
+                            color: Color(0xffF0F8FF),
+                            fontFamily: 'Cairo',
+                            fontSize: 24,
+                            fontWeight: FontWeight.w100,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Icon(Icons.location_on, color: Color(0xffF0F8FF), size: 42),
+                  ],
+                ),
+              ),
+              SizedBox(height: 64),
+              if (isLoading)
+                Center(child: CircularProgressIndicator())
+              else if (error.isNotEmpty)
+                Center(child: Text("خطأ: $error"))
+              else
+                Column(
+                  children:
+                      prayerTimesList.asMap().entries.map((entry) {
+                        int i = entry.key;
+                        var prayer = entry.value;
+                        return prayerCard(
+                          prayer["name"]!,
+                          prayer["time"]!,
+                          i == getNextPrayer(prayerTimesList),
+                        );
+                      }).toList(),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
-
-  // Duration nextPrayerTimeDuration(int nextPrayer) {
-  //   final time = prayerTimes[nextPrayer]['time'];
-  //   final parts = time!.split(":");
-  //   final hours = int.parse(parts[0]);
-  //   final minutes = int.parse(parts[1]);
-  //   final seconds = int.parse(parts[3]);
-
-  //   final now = TimeOfDay.now();
-  //   final String timeNow = '${now.hour}:${now.minute}';
-  //   final partsNow = timeNow.split(":");
-  //   final hoursNow = int.parse(partsNow[0]);
-  //   final minutesNow = int.parse(partsNow[1]);
-
-  //   final prayertime = Duration(
-  //     hours: hours,
-  //     minutes: minutes,
-  //     seconds: seconds,
-  //   );
-  //   final Duration n = Duration(hours: hoursNow, minutes: minutesNow);
-  //   final lastDuration = prayertime - n;
-  //   // int timeInSecond = timeNow.hour * 60 * 60 + timeNow.minute * 60;
-  //   // int durationsecond = n.inSeconds;
-  //   // int def = durationsecond - timeInSecond;
-
-  //   return lastDuration;
-  // }
-
-  // Duration timeNowOnDurti() {
-  //   final now = TimeOfDay.now();
-  //   final String time = '${now.hour}:${now.minute}';
-  //   final parts = time.split(":");
-  //   final hours = int.parse(parts[0]);
-  //   final minutes = int.parse(parts[1]);
-  //   return Duration(hours: hours, minutes: minutes);
-  // }
 }

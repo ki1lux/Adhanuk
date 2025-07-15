@@ -15,6 +15,9 @@ class CountdownTimer extends StatefulWidget {
 final PrayerTimeController controller = PrayerTimeController();
 final PrayerTimes = controller.getPrayerTimes();
 Duration remaining = Duration.zero;
+bool isAdhanPhase = true;
+Duration countUp = Duration.zero;
+final Duration iqamaDelay = Duration(minutes: 1);
 Timer? timer;
 
 int getNextPrayer(List<Map<String, String>> prayerTimes) {
@@ -61,7 +64,8 @@ class _CountdownTimerState extends State<CountdownTimer> {
 
   Future<void> loadPrayerTimesAndStartCountdown() async {
     final prayerTimesData = await controller.getPrayerTimes();
-    bool isIqama = true;
+    isAdhanPhase = true;
+    countUp = Duration.zero;
     final List<Map<String, String>> prayerTimes = [
       {
         "name": "الفجر",
@@ -88,24 +92,28 @@ class _CountdownTimerState extends State<CountdownTimer> {
     int nextIndex = getNextPrayer(prayerTimes);
     String nameOfNext = prayerTimes[nextIndex]["name"]!;
     remaining = nextPrayerTimeDuration(prayerTimes, nextIndex);
-    Duration iqamaTime = Duration(hours: 0, minutes: 0, seconds: 0);
     timer = Timer.periodic(Duration(seconds: 1), (_) {
       setState(() {
-        remaining -= Duration(seconds: 1);
+        if (isAdhanPhase) {
+          remaining -= Duration(seconds: 1);
 
-        if (remaining.inSeconds <= 0 && isIqama) {
-          isIqama = false;
+          if (remaining.inSeconds <= 0) {
+            isAdhanPhase = false; 
+            PrayerTimeController().callNativeAdhanNow(nameOfNext);
+            countUp = Duration.zero;
+          }
+        } else {
+          countUp += Duration(seconds: 1);
 
-          // 👇 Call your full-screen adhan
-          PrayerTimeController().callNativeAdhanNow(nameOfNext);
-
-          // You can add iqama countdown or just reload next prayer
-          timer.cancel();
-          loadPrayerTimesAndStartCountdown();
-          widget.onFinish();
+          if (countUp >= iqamaDelay) {
+            timer.cancel();
+            loadPrayerTimesAndStartCountdown(); 
+            widget.onFinish(); 
+          }
         }
       });
     });
+
   }
 
   @override
@@ -117,9 +125,11 @@ class _CountdownTimerState extends State<CountdownTimer> {
   @override
   Widget build(BuildContext context) {
     return Text(
-      "${formatDurationIntl(remaining)}",
+      isAdhanPhase
+          ? "${formatDurationIntl(remaining)}"
+          : "${formatDurationIntl(countUp)}",
       style: TextStyle(
-        color: Color(0xffF0F8FF),
+        color:isAdhanPhase? Color(0xffF0F8FF): Colors.red,
         fontWeight: FontWeight.bold,
         fontSize: 16,
       ),
