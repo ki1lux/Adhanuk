@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/controller/LocationController.dart';
-import 'package:myadhan/controller/PrayerTimeController.dart';
 import 'package:myadhan/view/CountDown.dart';
 
 class PrayerTimeScreen extends StatefulWidget {
@@ -84,15 +83,6 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        PrayerTimeController().callNativeAdhanNow("الفجر");
-                      },
-                      child: Text(
-                        "Test\n Notification",
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [

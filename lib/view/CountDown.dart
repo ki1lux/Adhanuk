@@ -4,9 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:myadhan/controller/PrayerTimeController.dart';
 
 class CountdownTimer extends StatefulWidget {
- final VoidCallback onFinish;
+  final VoidCallback onFinish;
 
-const CountdownTimer({required this.onFinish, Key? key}) : super(key: key);
+  const CountdownTimer({required this.onFinish, Key? key}) : super(key: key);
 
   @override
   _CountdownTimerState createState() => _CountdownTimerState();
@@ -86,23 +86,24 @@ class _CountdownTimerState extends State<CountdownTimer> {
     ];
 
     int nextIndex = getNextPrayer(prayerTimes);
+    String nameOfNext = prayerTimes[nextIndex]["name"]!;
     remaining = nextPrayerTimeDuration(prayerTimes, nextIndex);
     Duration iqamaTime = Duration(hours: 0, minutes: 0, seconds: 0);
     timer = Timer.periodic(Duration(seconds: 1), (_) {
       setState(() {
         remaining -= Duration(seconds: 1);
-        if (remaining == iqamaTime && isIqama) {
-          if (remaining == iqamaTime) {
-            isIqama = false;
-          }
-          remaining = Duration(minutes: 15);
-        }
-        if (remaining == iqamaTime && (!isIqama)) {
+
+        if (remaining.inSeconds <= 0 && isIqama) {
+          isIqama = false;
+
+          // 👇 Call your full-screen adhan
+          PrayerTimeController().callNativeAdhanNow(nameOfNext);
+
+          // You can add iqama countdown or just reload next prayer
           timer.cancel();
           loadPrayerTimesAndStartCountdown();
           widget.onFinish();
         }
-        ;
       });
     });
   }
