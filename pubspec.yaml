@@ -42,6 +42,7 @@ dependencies:
   flutter_qiblah: ^3.1.0+1
   location: ^5.0.3
   permission_handler: ^11.0.1
+  font_awesome_flutter: ^10.8.0
   
 
 dev_dependencies:
