@@ -78,6 +78,7 @@ flutter:
     - assets/ka3baInCompass.svg
     - assets/test.svg
     - assets/arrow.svg
+    - assets/settingsIcon.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

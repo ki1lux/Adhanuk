@@ -107,7 +107,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
-                 isNext
+                  isNext
                       ? CountdownTimer(
                         onFinish: () {
                           setState(() {

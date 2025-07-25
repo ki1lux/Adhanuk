@@ -7,6 +7,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:myadhan/view/SettingsScreen.dart';
 import 'package:myadhan/view/adhan_screen.dart';
 // import 'package:myadhan/test.dart';
 
@@ -34,6 +35,7 @@ class _MyAppState extends State<MyApp> {
     QiblaScreen(),
     AdhanScreen(),
     PrayerTimeScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -64,6 +66,7 @@ class _MyAppState extends State<MyApp> {
                     _buildNavItem('assets/h1.svg', 0),
                     _buildNavItem('assets/h2.svg', 1),
                     _buildNavItem('assets/h3.svg', 2),
+                    _buildNavItem('assets/settingsIcon.svg', 3),
                   ],
                 ),
               ),
