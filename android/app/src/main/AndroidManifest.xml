@@ -4,9 +4,9 @@
             <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
             <uses-permission android:name="android.permission.INTERNET" />
         <application
-        android:label="myadhan"
+        android:label="Adhani"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <uses-library android:name="org.apache.http.legacy" android:required="false"/>
 
             <activity android:name=".AdhanActivity"
