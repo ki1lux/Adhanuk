@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -86,7 +87,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 12),
               InkWell(
-                onTap: () => {},
+                onTap: () async {
+                  final url = Uri.parse("https://github.com/ki1lux");
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } else {
+                    throw 'Could not launch $url';
+                  }
+                },
                 child: Icon(
                   FontAwesomeIcons.github,
                   color: Colors.white,
@@ -109,6 +117,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
+  // void _launchGitHub() async {
+  //   final url = Uri.parse("https://github.com/ki1lux");
+  //   if (await canLaunchUrl(url)) {
+  //     await launchUrl(url, mode: LaunchMode.externalApplication);
+  //   } else {
+  //     print("❌ Could not launch $url");
+  //   }
+  // }
 
   Widget _settingsButtons(IconData icon, String title, VoidCallback onTap) {
     return Padding(
