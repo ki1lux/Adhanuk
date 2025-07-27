@@ -5,8 +5,12 @@ class QiblahController {
   final QiblahModel _model = QiblahModel();
 
   
-  Future<void> init() async {
-    await _model.requestPermissions();
+  Future<bool> init() async {
+    return await _model.requestPermissions();
+  }
+
+  Future<bool> hasPermission() async {
+    return await _model.hasPermission();
   }
 
   Stream getQiblaStream() {
