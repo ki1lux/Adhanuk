@@ -13,4 +13,6 @@ class QiblahModel {
    Future<bool> hasPermission() async {
     return await Permission.locationWhenInUse.isGranted;
   }
+
+  
 }

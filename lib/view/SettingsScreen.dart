@@ -118,14 +118,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // void _launchGitHub() async {
-  //   final url = Uri.parse("https://github.com/ki1lux");
-  //   if (await canLaunchUrl(url)) {
-  //     await launchUrl(url, mode: LaunchMode.externalApplication);
-  //   } else {
-  //     print("❌ Could not launch $url");
-  //   }
-  // }
 
   Widget _settingsButtons(IconData icon, String title, VoidCallback onTap) {
     return Padding(

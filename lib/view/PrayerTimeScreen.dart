@@ -2,11 +2,13 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/controller/LocationController.dart';
 import 'package:myadhan/controller/PrayerTimeController.dart';
 // import 'package:myadhan/model/PrayerTimeModel.dart';
 import 'package:myadhan/view/CountDown.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class PrayerTimeScreen extends StatefulWidget {
   @override
@@ -17,19 +19,72 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
   final LocationController _controller = LocationController();
   final PrayerTimeController prayerController = PrayerTimeController();
 
-  String countryLocationText = "fetching location...";
-  String cityLocationText = "fetching location...";
-
+  String countryLocationText = "location...";
+  String cityLocationText = "";
+  late Future<bool> _initFuture;
   // PrayerTimeModel? _prayerTimes;
   List<Map<String, String>> prayerTimesList = [];
-  bool isLoading = true;
-  String error = "";
+  bool isLoading = false;
+  String error = "error";
 
   @override
   void initState() {
     super.initState();
-    initEverything();
-    loadPrayerTimesOnce();
+    // initEverything();
+    // loadPrayerTimesOnce();
+    _initFuture = prepareApp();
+  }
+
+
+ Future<Position> determinePosition() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception("خدمة تحديد الموقع غير مفعلة");
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception("تم رفض صلاحية تحديد الموقع");
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception("صلاحية تحديد الموقع مرفوضة بشكل دائم");
+    }
+
+    return await Geolocator.getCurrentPosition();
+  }
+    
+  Future<bool> prepareApp() async {
+    final status = await Permission.location.request();
+
+    if (!status.isGranted) {
+      throw Exception("يرجى منح صلاحية تحديد الموقع للتطبيق");
+    }
+
+    final position = await determinePosition();
+
+    final placemark = await placemarkFromCoordinates(
+      position.latitude,
+      position.longitude,
+    );
+
+    countryLocationText = placemark[0].country ?? "";
+    cityLocationText = placemark[0].locality ?? "";
+
+    final data = await prayerController.getPrayerTimes();
+
+    prayerTimesList = [
+      {"name": "الفجر", "time": DateFormat('HH:mm').format(data.fajer)},
+      {"name": "الظهر", "time": DateFormat('HH:mm').format(data.dhuhr)},
+      {"name": "العصر", "time": DateFormat('HH:mm').format(data.asr)},
+      {"name": "المغرب", "time": DateFormat('HH:mm').format(data.maghrib)},
+      {"name": "العشاء", "time": DateFormat('HH:mm').format(data.isha)},
+    ];
+
+    return true;
   }
 
   Future<void> initEverything() async {
@@ -62,7 +117,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
         {"name": "المغرب", "time": DateFormat('HH:mm').format(data.maghrib)},
         {"name": "العشاء", "time": DateFormat('HH:mm').format(data.isha)},
       ];
-      setState(() => isLoading = false);
+      // setState(() => isLoading = false);
     } catch (e) {
       setState(() {
         error = e.toString();
@@ -156,71 +211,98 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(color: Color(0xff0A2239)),
-          SvgPicture.asset(
-            'assets/Vector.svg',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
-          Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.only(right: 16, top: 89),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          countryLocationText,
-                          style: TextStyle(
-                            color: Color(0xffF0F8FF),
-                            fontFamily: 'Cairo',
-                            fontSize: 38,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          cityLocationText,
-                          style: TextStyle(
-                            color: Color(0xffF0F8FF),
-                            fontFamily: 'Cairo',
-                            fontSize: 24,
-                            fontWeight: FontWeight.w100,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Icon(Icons.location_on, color: Color(0xffF0F8FF), size: 42),
-                  ],
-                ),
+      body: FutureBuilder(
+        future: _initFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+           return Container(
+  color: Color(0xff0A2239), // نفس خلفية الـ Scaffold
+  child: Center(
+    child: CircularProgressIndicator(color: Colors.white),
+  ),
+);
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "حدث خطأ: ${snapshot.error}",
+                style: TextStyle(color: Colors.red, fontSize: 18),
               ),
-              SizedBox(height: 64),
-              if (isLoading)
-                Center(child: CircularProgressIndicator())
-              else if (error.isNotEmpty)
-                Center(child: Text("خطأ: $error"))
-              else
-                Column(
-                  children:
-                      prayerTimesList.asMap().entries.map((entry) {
-                        int i = entry.key;
-                        var prayer = entry.value;
-                        return prayerCard(
-                          prayer["name"]!,
-                          prayer["time"]!,
-                          i == getNextPrayer(prayerTimesList),
-                        );
-                      }).toList(),
-                ),
-            ],
-          ),
-        ],
+            );
+          } else {
+            return 
+                Scaffold(
+                  backgroundColor: Color(0xff0A2239) ,
+                  body: Stack(
+                    children: [
+                      SvgPicture.asset(
+                    'assets/Vector.svg',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                      Column(
+                        children: [
+                          
+                          Padding(
+                            padding: EdgeInsets.only(right: 16, top: 89),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      countryLocationText,
+                                      style: TextStyle(
+                                        color: Color(0xffF0F8FF),
+                                        fontFamily: 'Cairo',
+                                        fontSize: 38,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      cityLocationText,
+                                      style: TextStyle(
+                                        color: Color(0xffF0F8FF),
+                                        fontFamily: 'Cairo',
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w100,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Icon(
+                                  Icons.location_on,
+                                  color: Color(0xffF0F8FF),
+                                  size: 42,
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 64),
+                          if (isLoading)
+                            Center(child: CircularProgressIndicator())
+                          else 
+                            Column(
+                              children:
+                                  prayerTimesList.asMap().entries.map((entry) {
+                                    int i = entry.key;
+                                    var prayer = entry.value;
+                                    return prayerCard(
+                                      prayer["name"]!,
+                                      prayer["time"]!,
+                                      i == getNextPrayer(prayerTimesList),
+                                    );
+                                  }).toList(),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+          }
+        },
       ),
     );
   }

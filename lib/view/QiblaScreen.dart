@@ -10,7 +10,7 @@ class QiblaScreen extends StatefulWidget {
 
 class _QiblaScreenState extends State<QiblaScreen> {
   final QiblahController _controller = QiblahController();
-
+  
   bool _hasPermission = false;
   bool _loading = true;
 
@@ -103,7 +103,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                           fontSize: 28,
                           fontFamily: 'cairo',
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: const Color(0xff0A2239),
                         ),
                       ),
                     ),
