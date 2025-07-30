@@ -2,9 +2,16 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/adhan_background"
-    android:padding="24dp">
+    
+    >
 
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/adhan_background"
+        android:contentDescription="@null" />
     <TextView
         android:id="@+id/prayerTitle"
         android:layout_width="wrap_content"

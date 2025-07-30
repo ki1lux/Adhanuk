@@ -25,21 +25,26 @@ class AdhanActivity : AppCompatActivity() {
         val prayerName = intent.getStringExtra("prayerName") ?: "الصلاة"
         findViewById<TextView>(R.id.prayerTitle).text = prayerName
 
-        mediaPlayer = MediaPlayer.create(this, R.raw.adhan1)
-        mediaPlayer?.start()
+        val okayButton = findViewById<Button>(R.id.okayButton)
+        val cancelButton = findViewById<Button>(R.id.cancelButton)
 
-        mediaPlayer?.setOnCompletionListener {
+
+        AdhanPlayer.play(this)
+
+        okayButton.setOnClickListener {
+
             finish()
         }
 
+        cancelButton.setOnClickListener {
 
-        findViewById<Button>(R.id.cancelButton).setOnClickListener {
+            AdhanPlayer.stop()
             finish()
         }
     }
-    override fun onDestroy() {
-        super.onDestroy()
-        mediaPlayer?.release()
-        mediaPlayer = null
-    }
+//    override fun onDestroy() {
+//        super.onDestroy()
+//        mediaPlayer?.release()
+//        mediaPlayer = null
+//    }
 }
