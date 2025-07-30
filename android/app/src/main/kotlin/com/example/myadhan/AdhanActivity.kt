@@ -1,5 +1,6 @@
 package com.example.myadhan// ← Use your actual package name here
 
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Button
@@ -7,6 +8,8 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class AdhanActivity : AppCompatActivity() {
+
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,8 +25,21 @@ class AdhanActivity : AppCompatActivity() {
         val prayerName = intent.getStringExtra("prayerName") ?: "الصلاة"
         findViewById<TextView>(R.id.prayerTitle).text = prayerName
 
+        mediaPlayer = MediaPlayer.create(this, R.raw.adhan1)
+        mediaPlayer?.start()
+
+        mediaPlayer?.setOnCompletionListener {
+            finish()
+        }
+
+
         findViewById<Button>(R.id.cancelButton).setOnClickListener {
             finish()
         }
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 }
