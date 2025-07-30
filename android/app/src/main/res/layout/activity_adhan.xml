@@ -2,7 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
+    android:background="@drawable/adhan_background"
     android:padding="24dp">
 
     <TextView
@@ -24,16 +24,35 @@
         android:textColor="#FFFFFF"
         android:layout_below="@id/prayerTitle"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp" />
+        android:layout_marginTop="8dp" />
 
     <Button
         android:id="@+id/cancelButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="إلغاء"
-        android:textColor="#FFFFFF"
-        android:background="@android:color/holo_red_dark"
+        android:text="إيقاف"
+        android:textSize="20sp"
+        android:textColor="#ffffff"
+        android:background="@drawable/rounded_button"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="60dp" />
+        android:layout_marginBottom="80dp"
+        android:height="56dp"
+        android:width="300dp"
+        />
+
+    <Button
+        android:id="@+id/okayButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="حسنا"
+        android:textSize="20sp"
+        android:textColor="#061123"
+        android:background="@drawable/rounded_background2"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="12dp"
+        android:height="56dp"
+        android:width="300dp"
+        />
 </RelativeLayout>
