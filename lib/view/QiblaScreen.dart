@@ -10,7 +10,7 @@ class QiblaScreen extends StatefulWidget {
 
 class _QiblaScreenState extends State<QiblaScreen> {
   final QiblahController _controller = QiblahController();
-  
+
   bool _hasPermission = false;
   bool _loading = true;
 
@@ -60,59 +60,64 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xff0A2239),
-      body: SafeArea(
-        child: Center(
-          child: StreamBuilder(
-            stream: _controller.getQiblaStream(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return Center(child: CircularProgressIndicator());
-              }
+      body: Stack(
+        children: [
+          SvgPicture.asset(
+            'assets/Vector.svg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+          Center(
+            child: StreamBuilder(
+              stream: _controller.getQiblaStream(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-              final qiblahDirection = snapshot.data;
-              final double screenWidth = MediaQuery.of(context).size.width;
+                final qiblahDirection = snapshot.data;
+                final double screenWidth = MediaQuery.of(context).size.width;
 
-              return SizedBox(
-                height: screenWidth + 70,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SvgPicture.asset(
-                      'assets/Vector.svg',
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-                    Transform.rotate(
-                      angle:
-                          ((qiblahDirection.direction ?? 0) * (pi / 180) * -1),
-                      child: SvgPicture.asset("assets/test.svg"),
-                    ),
-                    Transform.rotate(
-                      angle: ((qiblahDirection.qiblah ?? 0) * (pi / 180) * -1),
-                      child: SvgPicture.asset("assets/ka3baInCompass.svg"),
-                    ),
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: SvgPicture.asset("assets/arrow.svg"),
-                    ),
-                    Center(
-                      child: Text(
-                        " ${qiblahDirection.direction.toStringAsFixed(0)}°",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontFamily: 'cairo',
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xff0A2239),
+                return SizedBox(
+                  height: screenWidth + 75,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Transform.rotate(
+                        angle:
+                            ((qiblahDirection.direction ?? 0) *
+                                (pi / 180) *
+                                -1),
+                        child: SvgPicture.asset("assets/test.svg"),
+                      ),
+                      Transform.rotate(
+                        angle:
+                            ((qiblahDirection.qiblah ?? 0) * (pi / 180) * -1),
+                        child: SvgPicture.asset("assets/ka3baInCompass.svg"),
+                      ),
+                      Align(
+                        alignment: Alignment.topCenter,
+                        child: SvgPicture.asset("assets/arrow.svg"),
+                      ),
+                      Center(
+                        child: Text(
+                          " ${qiblahDirection.direction.toStringAsFixed(0)}°",
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontFamily: 'cairo',
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xff0A2239),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

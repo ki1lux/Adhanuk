@@ -23,7 +23,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  int _slectIndex = 1;
+  int _slectIndex = 0;
 
   void _onTap(int index) {
     setState(() {
@@ -32,9 +32,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   final List<Widget> _whichPage = [
-    QiblaScreen(),
     AdhanScreen(),
     PrayerTimeScreen(),
+    QiblaScreen(),
     SettingsScreen(),
   ];
 
@@ -63,9 +63,9 @@ class _MyAppState extends State<MyApp> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildNavItem('assets/h1.svg', 0),
-                    _buildNavItem('assets/h2.svg', 1),
-                    _buildNavItem('assets/h3.svg', 2),
+                    _buildNavItem('assets/h2.svg', 0),
+                    _buildNavItem('assets/h3.svg', 1),
+                    _buildNavItem('assets/h1.svg', 2),
                     _buildNavItem('assets/settingsIcon.svg', 3),
                   ],
                 ),
