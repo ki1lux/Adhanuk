@@ -18,9 +18,12 @@ class MainActivity : FlutterActivity(){
                 call, result ->
             if (call.method == "showFullScreenAdhan") {
                 val prayerName = call.argument<String>("prayerName") ?: "صلاة"
+                val  prayerTime = call.argument<String>("prayerTime") ?: "حان وقت الصلاة"
 
                 val intent = Intent(this, AdhanActivity::class.java).apply {
-                    putExtra("prayerName", prayerName)
+                    putExtra("prayerName" , prayerName)
+                    putExtra("prayerTime", prayerTime)
+
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
                             Intent.FLAG_ACTIVITY_CLEAR_TOP or
                             Intent.FLAG_ACTIVITY_SINGLE_TOP)

@@ -23,7 +23,9 @@ class AdhanActivity : AppCompatActivity() {
         )
 
         val prayerName = intent.getStringExtra("prayerName") ?: "الصلاة"
+        val prayerTime = intent.getStringExtra("prayerTime") ?: "حان وقت الصلاة"
         findViewById<TextView>(R.id.prayerTitle).text = prayerName
+        findViewById<TextView>(R.id.messageText).text = prayerTime
 
         val okayButton = findViewById<Button>(R.id.okayButton)
         val cancelButton = findViewById<Button>(R.id.cancelButton)

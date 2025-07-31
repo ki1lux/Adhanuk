@@ -56,6 +56,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
 
     int nextIndex = getNextPrayerIndex(prayerTimes, now);
     String nextPrayerName = prayerTimes[nextIndex]['name']!;
+    String prayerTime = prayerTimes[nextIndex]['time']!;
     DateTime nextPrayerTime = getNextPrayerDateTime(
       prayerTimes,
       nextIndex,
@@ -73,7 +74,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
           if (remaining.inSeconds <= 0 && lastPlayedPrayer != nextPrayerName) {
             isAdhanPhase = false;
             lastPlayedPrayer = nextPrayerName;
-            controller.callNativeAdhanNow(nextPrayerName);
+            controller.callNativeAdhanNow(nextPrayerName,prayerTime);
             countUp = Duration.zero;
           }
         } else {

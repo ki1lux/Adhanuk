@@ -55,10 +55,11 @@ class PrayerTimeController {
     
   }
 
-  Future<void> callNativeAdhanNow(String prayerName) async {
+  Future<void> callNativeAdhanNow(String prayerName, String prayerTime) async {
     try {
       await _channel.invokeMethod('showFullScreenAdhan', {
         'prayerName': prayerName,
+        'prayerTime': prayerTime,
       });
     } catch (e) {
       print("Error calling native Adhan: $e");
