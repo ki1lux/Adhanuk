@@ -1,6 +1,7 @@
 // import 'dart:nativewrappers/_internal/vm/lib/ffi_patch.dart';
 
 // import 'dart:ffi';
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:myadhan/view/QiblaScreen.dart';
 import 'package:myadhan/view/PrayerTimeScreen.dart';
 import 'dart:ui';
@@ -11,7 +12,9 @@ import 'package:myadhan/view/SettingsScreen.dart';
 import 'package:myadhan/view/adhan_screen.dart';
 // import 'package:myadhan/test.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AndroidAlarmManager.initialize;
   runApp(const MyApp());
 }
 
