@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:myadhan/controller/PrayerTimeController.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -9,6 +10,21 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool isFullScreen = true;
+  Map<String, dynamic> alarmStatus = {};
+  final PrayerTimeController _prayerController = PrayerTimeController();
+
+  @override
+  void initState() {
+    super.initState();
+    
+  }
+
+  // Future<void> _loadAlarmStatus() async {
+  //   final status = await _prayerController.getAlarmStatus();
+  //   setState(() {
+  //     alarmStatus = status;
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +84,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _settingsButtons(Icons.color_lens, "Choose theme", () {}),
               _settingsButtons(Icons.share, "Share App", () {}),
               _settingsButtons(Icons.star, "Rate App", () {}),
+              _settingsButtons(Icons.alarm, "Reschedule Prayer Alarms", () {}),
+              _settingsButtons(Icons.info, "Alarm Status", () {
+                _showAlarmStatusDialog();
+              }),
               _settingsButtons(Icons.mosque, "Adhani\nversion : 1.0", () {}),
 
               const Spacer(),
@@ -156,6 +176,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return BoxDecoration(
       color: const Color(0xFF2D4356),
       borderRadius: BorderRadius.circular(24),
+    );
+  }
+
+  void _showAlarmStatusDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2D4356),
+          title: Text(
+            'Prayer Alarm Status',
+            style: TextStyle(color: Colors.white, fontFamily: 'cairo'),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: alarmStatus.entries.map((entry) {
+                final prayerName = entry.key;
+                final data = entry.value as Map<String, dynamic>;
+                final isPassed = data['isPassed'] as bool;
+                final nextOccurrence = data['nextOccurrence'] as String;
+                
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        prayerName,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'cairo',
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        isPassed ? 'Tomorrow $nextOccurrence' : 'Today ${data['time']}',
+                        style: TextStyle(
+                          color: isPassed ? Colors.orange : Colors.green,
+                          fontFamily: 'cairo',
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Close',
+                style: TextStyle(color: Colors.white, fontFamily: 'cairo'),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
