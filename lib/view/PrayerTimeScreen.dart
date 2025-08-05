@@ -7,7 +7,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/controller/LocationController.dart';
 import 'package:myadhan/controller/PrayerTimeController.dart';
-// import 'package:myadhan/model/PrayerTimeModel.dart';
 import 'package:myadhan/view/CountDown.dart';
 import 'package:permission_handler/permission_handler.dart';
 

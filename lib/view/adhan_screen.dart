@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:myadhan/view/AnalogClockView.dart';
 
 class AdhanScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+
+SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    statusBarColor: Colors.white, // أو transparent لو عندك AppBar
+    statusBarIconBrightness: Brightness.dark, // أيقونات سوداء
+    statusBarBrightness: Brightness.light, // لأجهزة iOS
+  ));
+
     return Scaffold(
       body: Stack(
         children: [
