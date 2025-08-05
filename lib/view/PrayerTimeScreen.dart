@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
@@ -35,8 +36,7 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
     _initFuture = prepareApp();
   }
 
-
- Future<Position> determinePosition() async {
+  Future<Position> determinePosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw Exception("خدمة تحديد الموقع غير مفعلة");
@@ -56,25 +56,44 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
 
     return await Geolocator.getCurrentPosition();
   }
-    
+
   Future<bool> prepareApp() async {
     final status = await Permission.location.request();
+    late List<Placemark> placemark;
+    Coordinates? fallbackCoordinates;
 
     if (!status.isGranted) {
       throw Exception("يرجى منح صلاحية تحديد الموقع للتطبيق");
     }
 
-    final position = await determinePosition();
+    try {
+      final position = await determinePosition();
+      placemark = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
 
-    final placemark = await placemarkFromCoordinates(
-      position.latitude,
-      position.longitude,
-    );
+      // احفظ الموقع لاستخدامه لاحقًا
+      await prayerController.saveLastLocation();
+    } catch (e) {
+      // لم يتمكن من تحديد الموقع، جرب استخدام الموقع المحفوظ
+      fallbackCoordinates = await prayerController.getLastSavedLocation();
+      if (fallbackCoordinates == null) {
+        throw Exception("لم نتمكن من تحديد الموقع أو العثور على موقع محفوظ");
+      }
+
+      placemark = await placemarkFromCoordinates(
+        fallbackCoordinates.latitude,
+        fallbackCoordinates.longitude,
+      );
+    }
 
     countryLocationText = placemark[0].country ?? "";
     cityLocationText = placemark[0].locality ?? "";
 
-    final data = await prayerController.getPrayerTimes();
+    final data = await prayerController.getPrayerTimes(
+
+    );
 
     prayerTimesList = [
       {"name": "الفجر", "time": DateFormat('HH:mm').format(data.fajer)},
@@ -215,12 +234,12 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
         future: _initFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-           return Container(
-  color: Color(0xff0A2239), // نفس خلفية الـ Scaffold
-  child: Center(
-    child: CircularProgressIndicator(color: Colors.white),
-  ),
-);
+            return Container(
+              color: Color(0xff0A2239), // نفس خلفية الـ Scaffold
+              child: Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            );
           } else if (snapshot.hasError) {
             return Center(
               child: Text(
@@ -229,78 +248,76 @@ class _PrayerTimeState extends State<PrayerTimeScreen> {
               ),
             );
           } else {
-            return 
-                Scaffold(
-                  backgroundColor: Color(0xff0A2239) ,
-                  body: Stack(
-                    children: [
-                      SvgPicture.asset(
+            return Scaffold(
+              backgroundColor: Color(0xff0A2239),
+              body: Stack(
+                children: [
+                  SvgPicture.asset(
                     'assets/Vector.svg',
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
                   ),
-                      Column(
-                        children: [
-                          
-                          Padding(
-                            padding: EdgeInsets.only(right: 16, top: 89),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.end,
+                  Column(
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(right: 16, top: 89),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      countryLocationText,
-                                      style: TextStyle(
-                                        color: Color(0xffF0F8FF),
-                                        fontFamily: 'Cairo',
-                                        fontSize: 38,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      cityLocationText,
-                                      style: TextStyle(
-                                        color: Color(0xffF0F8FF),
-                                        fontFamily: 'Cairo',
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w100,
-                                      ),
-                                    ),
-                                  ],
+                                Text(
+                                  countryLocationText,
+                                  style: TextStyle(
+                                    color: Color(0xffF0F8FF),
+                                    fontFamily: 'Cairo',
+                                    fontSize: 38,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                Icon(
-                                  Icons.location_on,
-                                  color: Color(0xffF0F8FF),
-                                  size: 42,
+                                Text(
+                                  cityLocationText,
+                                  style: TextStyle(
+                                    color: Color(0xffF0F8FF),
+                                    fontFamily: 'Cairo',
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w100,
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                          SizedBox(height: 64),
-                          if (isLoading)
-                            Center(child: CircularProgressIndicator())
-                          else 
-                            Column(
-                              children:
-                                  prayerTimesList.asMap().entries.map((entry) {
-                                    int i = entry.key;
-                                    var prayer = entry.value;
-                                    return prayerCard(
-                                      prayer["name"]!,
-                                      prayer["time"]!,
-                                      i == getNextPrayer(prayerTimesList),
-                                    );
-                                  }).toList(),
+                            Icon(
+                              Icons.location_on,
+                              color: Color(0xffF0F8FF),
+                              size: 42,
                             ),
-                        ],
+                          ],
+                        ),
                       ),
+                      SizedBox(height: 64),
+                      if (isLoading)
+                        Center(child: CircularProgressIndicator())
+                      else
+                        Column(
+                          children:
+                              prayerTimesList.asMap().entries.map((entry) {
+                                int i = entry.key;
+                                var prayer = entry.value;
+                                return prayerCard(
+                                  prayer["name"]!,
+                                  prayer["time"]!,
+                                  i == getNextPrayer(prayerTimesList),
+                                );
+                              }).toList(),
+                        ),
                     ],
                   ),
-                );
+                ],
+              ),
+            );
           }
         },
       ),
