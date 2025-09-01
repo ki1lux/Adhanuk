@@ -46,6 +46,11 @@ dependencies:
   url_launcher: ^6.2.5
   android_alarm_manager_plus: ^4.0.7
   shared_preferences: ^2.5.3
+  flutter_background_service: ^5.0.5
+  flutter_background_service_android: ^6.1.0
+  flutter_local_notifications: ^19.4.1
+  timezone: ^0.10.0
+
   
 
 dev_dependencies:
