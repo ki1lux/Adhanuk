@@ -50,48 +50,64 @@ class _MyAppState extends State<MyApp> {
     init();
     // _loadPrayerTimes();
     // _scheduleAllPrayers();
-    
+
     super.initState();
-    scheduleReminder(id: 4, title: 'Scheduled work!', body: 'body');
+    schedulePrayerNotifications();
+    // scheduleReminder(id: 4, title: 'Scheduled work!', body: 'body');
   }
 
-  // Future<void> schedulePrayerNotifications() async {
-  //   // هنا تحسب مواقيت الصلاة من API أو من مكتبة عندك
-  //   // حاليا سنضع أوقات تجريبية (يجب تعويضها بوقتك الحقيقي)
+  Future<void> schedulePrayerNotifications() async {
+    // هنا تحسب مواقيت الصلاة من API أو من مكتبة عندك
+    // حاليا سنضع أوقات تجريبية (يجب تعويضها بوقتك الحقيقي)
 
-  //   int id = 2;
-  //   final now = DateTime.now();
-  //   final prayerTimesList = [
-  //     {"name": "العصر", "time": "16:00"},
-  //   ];
+    int id = 2;
+    final now = DateTime.now();
+    // final prayerTimesList = [
+    //   {"name": "العصر", "time": "12:06"},
 
-  //   String name = prayerTimesList[0]['name']!;
-  //   String time = prayerTimesList[0]['time']!;
+    // ];
+    final data = await prayerController.getPrayerTimes();
+    final prayerTimesList = [
+      {"name": "الفجر", "time": DateFormat('HH:mm').format(data.fajer)},
+      {"name": "الظهر", "time": DateFormat('HH:mm').format(data.dhuhr)},
+      {"name": "العصر", "time": "16:39"},
+      {"name": "المغرب", "time": DateFormat('HH:mm').format(data.maghrib)},
+      {"name": "العشاء", "time": DateFormat('HH:mm').format(data.isha)},
+    ];
 
-  //   final parts = time.split(':');
-  //   final scheduledTime = DateTime(
-  //     now.year,
-  //     now.month,
-  //     now.day,
-  //     int.parse(parts[0]),
-  //     int.parse(parts[1]),
-  //   );
+    for (var prayer in prayerTimesList) {
+      String name = prayer['name']!;
+      String time = prayer['time']!;
 
-  //   await _showScheduledNotification(
-  //     id: id,
-  //     title: name,
-  //     body: name,
-  //     time: scheduledTime,
-  //   );
-  // }
+      // print('!!!!!!!!!!!!!' + time + '!!!!!!!!!!!!!');
+
+      final parts = time.split(':');
+      final scheduledTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
+      id = id + 1;
+      await scheduleReminder(
+        id: id,
+        title: name,
+        body: time,
+        time: scheduledTime,
+      );
+    }
+  }
 
   Future<void> scheduleReminder({
     required int id,
     required String title,
     String? body,
+    required DateTime time,
   }) async {
-    TZDateTime now = TZDateTime.now(local);
-    TZDateTime scheduledDate = now.add(Duration(seconds: 10));
+    // TZDateTime now = TZDateTime.now(local);
+    TZDateTime salat = TZDateTime.from(time, tz.local);
+    TZDateTime scheduledDate = salat;
     await notificationsPlugin.zonedSchedule(
       id,
       title,
@@ -104,7 +120,19 @@ class _MyAppState extends State<MyApp> {
           channelDescription: 'Reminder to complete daily habits',
           importance: Importance.max,
           priority: Priority.high,
+          //! addition part
+          playSound: true,
+          // sound: RawResourceAndroidNotificationSound('adhan1'),
+          // actions: <AndroidNotificationAction>[
+          //   AndroidNotificationAction(
+          //     'STOP_ADHAN',
+          //     'Stop',
+          //     showsUserInterface: true,
+          //     cancelNotification: true,
+          //   ),
+          // ],
         ),
+
         iOS: DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -119,18 +147,25 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> init() async {
-    initializeTimeZones();
-    setLocalLocation(getLocation('America/Toronto'));
+    tz.initializeTimeZones();
+    tz.setLocalLocation(getLocation('Algeria/Batna'));
 
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const DarwinInitializationSettings iosSettings =
         DarwinInitializationSettings();
     const InitializationSettings initializationSettings =
         InitializationSettings(android: androidSettings, iOS: iosSettings);
     await notificationsPlugin.initialize(initializationSettings);
+
+    // await notificationsPlugin.initialize(
+    //   initializationSettings,
+    //   onDidReceiveNotificationResponse: (NotificationResponse response) {
+    //     if (response.actionId == 'STOP_ADHAN') {
+    //       notificationsPlugin.cancelAll(); // stop Adhan
+    //     }
+    //   },
+    // );
   }
 
   // Future<void> _loadPrayerTimes() async {

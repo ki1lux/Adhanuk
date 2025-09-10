@@ -1,10 +1,15 @@
 // import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 // import 'package:flutter/scheduler.dart';
 import 'package:myadhan/controller/ClockController.dart';
 import 'package:myadhan/model/ClockModel.dart';
 import 'package:intl/intl.dart';
+// import 'package:timezone/data/latest.dart';
+// import 'package:timezone/data/latest.dart' as tz;
+// import 'package:timezone/data/latest_10y.dart';
+// import 'package:timezone/timezone.dart' as tz;
 
 class Analogclockview extends StatefulWidget {
   const Analogclockview({super.key});
@@ -14,10 +19,34 @@ class Analogclockview extends StatefulWidget {
 }
 
 class _AnalogclockviewState extends State<Analogclockview> {
+  // final FlutterLocalNotificationsPlugin notificationsPlugin =
+  //     FlutterLocalNotificationsPlugin();
   DateTime time = DateTime.now();
   late String timeAfterReform = DateFormat('h:mm a').format(time);
   late ClockModel model;
   late ClockController controller;
+
+  // Future<void> init() async {
+  //   tz.initializeTimeZones();
+  //   tz.setLocalLocation(tz.getLocation('Algeria/Batna'));
+
+  //   const androidSettings = AndroidInitializationSettings('ic_stat_adhan.png');
+
+  //   const DarwinInitializationSettings iosSettings =
+  //       DarwinInitializationSettings();
+  //   const InitializationSettings initializationSettings =
+  //       InitializationSettings(android: androidSettings, iOS: iosSettings);
+  //   // await notificationsPlugin.initialize(initializationSettings);
+
+  //   await notificationsPlugin.initialize(
+  //     initializationSettings,
+  //     onDidReceiveNotificationResponse: (NotificationResponse response) {
+  //       if (response.actionId == 'STOP_ADHAN') {
+  //         notificationsPlugin.cancelAll(); // stop Adhan
+  //       }
+  //     },
+  //   );
+  // }
 
   @override
   void initState() {
@@ -56,6 +85,24 @@ class _AnalogclockviewState extends State<Analogclockview> {
             fontWeight: FontWeight.bold,
           ),
         ),
+//         ElevatedButton(onPressed: ()async{
+//           await notificationsPlugin.show(
+//   0,
+//   'Test Adhan',
+//   'This should play Adhan sound',
+//   const NotificationDetails(
+//     android: AndroidNotificationDetails(
+//       'daily_reminder_channel_id',
+//       'Daily Reminders',
+//       channelDescription: 'Test Adhan',
+//       importance: Importance.max,
+//       priority: Priority.high,
+//       playSound: true,
+//       sound: RawResourceAndroidNotificationSound('adhan1'),
+//     ),
+//   ),
+// );
+// }, child: Text("Adhan")),
       ],
     );
   }
