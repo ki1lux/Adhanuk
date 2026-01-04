@@ -21,19 +21,30 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   Future<void> _checkPermission() async {
-    // Ask for permission via controller
+    // 1. Check if we already have permission
     bool granted = await _controller.hasPermission();
 
     if (!granted) {
-      // Try requesting it again
-      await _controller.init(); // this asks again
-      granted = await _controller.hasPermission(); // check again after asking
+      try {
+        // 2. UNCOMMENT this line to show the popup
+        // We wrap it in try-catch to stop the crash if it's called twice
+        await _controller.init();
+
+        // 3. Check again after the user clicks Allow/Deny
+        granted = await _controller.hasPermission();
+      } catch (e) {
+        // 4. If the error "Already requesting" happens, we ignore it safely.
+        print("Popup is already open: $e");
+      }
     }
 
-    setState(() {
-      _hasPermission = granted;
-      _loading = false;
-    });
+    // 5. Update the UI
+    if (mounted) {
+      setState(() {
+        _hasPermission = granted;
+        _loading = false;
+      });
+    }
   }
 
   @override

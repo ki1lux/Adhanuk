@@ -1,4 +1,4 @@
-import 'package:intl/intl.dart';
+// import 'package:intl/intl.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/timezone.dart';
@@ -34,19 +34,24 @@ Future<void> schedulePrayerNotifications() async {
       int.parse(parts[1]),
     );
 
-    final notificationTime =
-        scheduledTime.isBefore(now)
-            ? scheduledTime.add(Duration(days: 1))
-            : scheduledTime;
+    // final notificationTime =
+    //     scheduledTime.isBefore(now)
+    //         ? scheduledTime.add(Duration(days: 1))
+    //         : scheduledTime;
 
-    _showScheduledNotification(id: id,title: name,body: name,time: scheduledTime);
+    _showScheduledNotification(
+      id: id,
+      title: name,
+      body: name,
+      time: scheduledTime,
+    );
   }
 }
 
 Future<void> _showScheduledNotification({
   required int id,
   required String title,
-  required String body ,
+  required String body,
   DateTime? time,
 }) async {
   final FlutterLocalNotificationsPlugin notificationsPlugin =

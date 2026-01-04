@@ -6,7 +6,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/controller/PrayerTimeController.dart';
-import 'package:myadhan/notification_service.dart';
+// import 'package:myadhan/notification_service.dart';
 import 'package:myadhan/view/QiblaScreen.dart';
 import 'package:myadhan/view/PrayerTimeScreen.dart';
 import 'dart:ui';
@@ -18,13 +18,14 @@ import 'package:myadhan/view/adhan_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/data/latest.dart';
+// import 'package:timezone/data/latest.dart';
 import 'package:timezone/timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 // import 'package:myadhan/test.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
   // await AndroidAlarmManager.initialize();
   runApp(const MyApp());
 }
@@ -148,9 +149,11 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> init() async {
     tz.initializeTimeZones();
-    tz.setLocalLocation(getLocation('Algeria/Batna'));
+    tz.setLocalLocation(getLocation('Africa/Algiers'));
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
 
     const DarwinInitializationSettings iosSettings =
         DarwinInitializationSettings();

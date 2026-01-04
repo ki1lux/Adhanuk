@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:myadhan/controller/PrayerTimeController.dart';
+// import 'package:myadhan/controller/PrayerTimeController.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -12,12 +12,11 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool isFullScreen = true;
   Map<String, dynamic> alarmStatus = {};
-  final PrayerTimeController _prayerController = PrayerTimeController();
+  // final PrayerTimeController _prayerController = PrayerTimeController();
 
   @override
   void initState() {
     super.initState();
-    
   }
 
   // Future<void> _loadAlarmStatus() async {
@@ -29,7 +28,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     // SystemChrome.setSystemUIOverlayStyle(
     //   SystemUiOverlayStyle(
     //     statusBarColor: Colors.black, // أو لون الخلفية الداكنة للصفحة
@@ -48,7 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: 6),
-          
+
                 Text(
                   "Settings",
                   style: TextStyle(
@@ -71,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           isFullScreen = val;
                         });
                       },
-                      activeColor: Colors.white,
+                      activeThumbColor: Colors.white,
                       title: const Text(
                         "Full screen notif",
                         style: TextStyle(
@@ -92,14 +90,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _settingsButtons(Icons.color_lens, "Choose theme", () {}),
                 _settingsButtons(Icons.share, "Share App", () {}),
                 _settingsButtons(Icons.star, "Rate App", () {}),
-                _settingsButtons(Icons.alarm, "Reschedule Prayer Alarms", () {}),
+                _settingsButtons(
+                  Icons.alarm,
+                  "Reschedule Prayer Alarms",
+                  () {},
+                ),
                 _settingsButtons(Icons.info, "Alarm Status", () {
                   _showAlarmStatusDialog();
                 }),
                 _settingsButtons(Icons.mosque, "Adhani\nversion : 1.0", () {}),
-          
+
                 const SizedBox(height: 32),
-          
+
                 const Divider(color: Colors.white24),
                 SizedBox(height: 5),
                 Center(
@@ -118,7 +120,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () async {
                     final url = Uri.parse("https://github.com/ki1lux");
                     if (await canLaunchUrl(url)) {
-                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
                     } else {
                       throw 'Could not launch $url';
                     }
@@ -146,7 +151,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
 
   Widget _settingsButtons(IconData icon, String title, VoidCallback onTap) {
     return Padding(
@@ -201,37 +205,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: alarmStatus.entries.map((entry) {
-                final prayerName = entry.key;
-                final data = entry.value as Map<String, dynamic>;
-                final isPassed = data['isPassed'] as bool;
-                final nextOccurrence = data['nextOccurrence'] as String;
-                
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        prayerName,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'cairo',
-                          fontSize: 16,
-                        ),
+              children:
+                  alarmStatus.entries.map((entry) {
+                    final prayerName = entry.key;
+                    final data = entry.value as Map<String, dynamic>;
+                    final isPassed = data['isPassed'] as bool;
+                    final nextOccurrence = data['nextOccurrence'] as String;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            prayerName,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'cairo',
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            isPassed
+                                ? 'Tomorrow $nextOccurrence'
+                                : 'Today ${data['time']}',
+                            style: TextStyle(
+                              color: isPassed ? Colors.orange : Colors.green,
+                              fontFamily: 'cairo',
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        isPassed ? 'Tomorrow $nextOccurrence' : 'Today ${data['time']}',
-                        style: TextStyle(
-                          color: isPassed ? Colors.orange : Colors.green,
-                          fontFamily: 'cairo',
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
             ),
           ),
           actions: [
