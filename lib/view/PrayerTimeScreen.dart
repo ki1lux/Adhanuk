@@ -21,65 +21,53 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
   String _countryText = 'الموقع...';
   String _cityText = '';
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+  _loadSavedLocation();
+}
+
+Future<void> _loadLocation() async {
+  try {
+
+    final position = await Geolocator.getCurrentPosition();
+
+    // save location
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('lat', position.latitude);
+    await prefs.setDouble('lon', position.longitude);
+
+    // converting coordinates to country and city name
+    final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+    
+    if (placemarks.isNotEmpty) {
+      String country = placemarks[0].country ?? '';
+      String city = placemarks[0].locality ?? '';
+      
+      // save names of country and city for quick access
+      await prefs.setString('country_name', country);
+      await prefs.setString('city_name', city);
+
+      _updateLocation(country, city);
+    }
+  } catch (e) {
+    print("Error: $e");
+  }
+}
+
+// set saved location if it exist
+Future<void> _loadSavedLocation() async {
+  final prefs = await SharedPreferences.getInstance();
+  String? savedCountry = prefs.getString('country_name');
+  String? savedCity = prefs.getString('city_name');
+
+  if (savedCountry != null) {
+    _updateLocation(savedCountry, savedCity ?? '');
+  } else {
+    // if location not available , search for it
     _loadLocation();
   }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Reload location if still showing placeholder (permission wasn't granted during initState)
-    if (_countryText == 'الموقع...' || _countryText == 'صلاحية الموقع مرفوضة') {
-      _loadLocation();
-    }
-  }
-
-  Future<void> _loadLocation() async {
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        _updateLocation('GPS مغلق', '');
-        return;
-      }
-
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        _updateLocation('صلاحية الموقع مرفوضة', '');
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.low,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
-
-      try {
-        final placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        ).timeout(const Duration(seconds: 5));
-
-        if (placemarks.isNotEmpty) {
-          _updateLocation(
-            placemarks[0].country ?? '',
-            placemarks[0].locality ?? '',
-          );
-        }
-      } catch (_) {
-        _updateLocation('الموقع', '');
-      }
-    } catch (_) {
-      _updateLocation('خطأ في تحديد الموقع', '');
-    }
-  }
+}
 
   void _updateLocation(String country, String city) {
     if (mounted) {
