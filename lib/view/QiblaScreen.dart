@@ -52,7 +52,29 @@ class _QiblaScreenState extends State<QiblaScreen> {
     if (_loading) {
       return Scaffold(
         backgroundColor: const Color(0xff0A2239),
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(color: Colors.white),
+              const SizedBox(height: 24),
+              const Text(
+                'جاري التحميل...',
+                style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontSize: 16),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _checkPermission,
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة', style: TextStyle(fontFamily: 'Cairo')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white24,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -60,10 +82,30 @@ class _QiblaScreenState extends State<QiblaScreen> {
       return Scaffold(
         backgroundColor: const Color(0xff0A2239),
         body: Center(
-          child: Text(
-            "Location permission is required to use the compass.",
-            style: TextStyle(color: Colors.white, fontSize: 16),
-            textAlign: TextAlign.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.location_off, color: Colors.white54, size: 64),
+              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  "يجب السماح بإذن الموقع لاستخدام البوصلة",
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Cairo'),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _checkPermission,
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة', style: TextStyle(fontFamily: 'Cairo')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white24,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
           ),
         ),
       );

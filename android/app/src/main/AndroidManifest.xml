@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
 
     <!-- Foreground Service Permissions -->
@@ -87,6 +88,12 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+        
+        <!-- Custom Prayer Alarm Receiver for full-screen Adhan -->
+        <receiver
+            android:name=".PrayerAlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
         <!-- Foreground Service -->
         <service

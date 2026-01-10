@@ -5,9 +5,10 @@ class QiblahModel {
     return FlutterQiblah.qiblahStream;
   }
 
+  /// Returns true if location permission is granted.
+  /// Note: Actual permission request happens in main.dart at app startup.
   Future<bool> requestPermissions() async {
-    final status = await Permission.locationWhenInUse.request();
-    return status.isGranted;
+    return await Permission.locationWhenInUse.isGranted;
   }
 
    Future<bool> hasPermission() async {

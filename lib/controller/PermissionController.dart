@@ -66,7 +66,7 @@ class PermissionController {
   }
 
   // Open app settings if permissions are denied
-  static Future<void> openAppSettings() async {
+  static Future<void> openSettings() async {
     await openAppSettings();
   }
 } 

@@ -1,41 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-// import 'package:myadhan/controller/PrayerTimeController.dart';
+import 'package:myadhan/prayer_alarm_scheduler.dart';
+import 'package:geolocator/geolocator.dart'; // Added for openAppSettings
 
 class SettingsScreen extends StatefulWidget {
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+
+
 class _SettingsScreenState extends State<SettingsScreen> {
   bool isFullScreen = true;
   Map<String, dynamic> alarmStatus = {};
-  // final PrayerTimeController _prayerController = PrayerTimeController();
 
   @override
   void initState() {
     super.initState();
   }
 
-  // Future<void> _loadAlarmStatus() async {
-  //   final status = await _prayerController.getAlarmStatus();
-  //   setState(() {
-  //     alarmStatus = status;
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
-    // SystemChrome.setSystemUIOverlayStyle(
-    //   SystemUiOverlayStyle(
-    //     statusBarColor: Colors.black, // أو لون الخلفية الداكنة للصفحة
-    //     statusBarIconBrightness: Brightness.light, // أيقونات بيضاء
-    //     statusBarBrightness: Brightness.dark,
-    //   ),
-    // );
-    // TODO: implement build
     return Scaffold(
       backgroundColor: const Color(0xff0A2239),
       body: SafeArea(
@@ -97,6 +83,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 _settingsButtons(Icons.info, "Alarm Status", () {
                   _showAlarmStatusDialog();
+                }),
+                _settingsButtons(Icons.timer, "Test Native Alarm (10s)", () {
+                  PrayerAlarmScheduler.testNativeAlarm();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Alarm scheduled! Close app to test.')),
+                  );
+                }),
+                _settingsButtons(Icons.build, "Troubleshoot Alarm", () {
+                  _showTroubleshootDialog();
                 }),
                 _settingsButtons(Icons.mosque, "Adhani\nversion : 1.0", () {}),
 
@@ -252,6 +247,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         );
       },
+    );
+  }
+
+  void _showTroubleshootDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2D4356),
+          title: Text(
+            'استكشاف الأخطاء وإصلاحها',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'cairo',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTroubleshootItem(
+                  "1. إذن التنبيه الدقيق (Exact Alarm)",
+                  "تأكد من تفعيل هذا الإذن لضمان عمل الأذان في وقته الدقيق.",
+                  () async {
+                    bool granted = await PrayerAlarmScheduler.checkExactAlarmPermission();
+                    if (!granted) {
+                      await PrayerAlarmScheduler.requestExactAlarmPermission();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('الإذن مفعل بالفعل ✅')),
+                      );
+                    }
+                  },
+                ),
+                SizedBox(height: 16),
+                _buildTroubleshootItem(
+                  "2. تحسين البطارية (Battery Optimization)",
+                  "بعض الهواتف توقف التطبيق في الخلفية. يرجى استثناء التطبيق من تحسين البطارية.",
+                  () async {
+                     await Geolocator.openAppSettings();
+                  },
+                ),
+                SizedBox(height: 16),
+                Text(
+                  "نصيحة: إذا كان هاتفك من نوع Xiaomi أو Huawei، ابحث عن إعدادات 'التشغيل التلقائي' (Autostart) وقم بتفعيل التطبيق.",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontFamily: 'cairo',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'إغلاق',
+                style: TextStyle(color: Colors.white, fontFamily: 'cairo'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTroubleshootItem(String title, String desc, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+              fontFamily: 'cairo',
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            desc,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontFamily: 'cairo',
+            ),
+          ),
+          SizedBox(height: 8),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.blueAccent.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+            ),
+            child: Text(
+              "اضغط هنا للتحقق / الإصلاح",
+              style: TextStyle(color: Colors.blueAccent, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

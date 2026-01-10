@@ -1,151 +1,127 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/controller/PrayerTimeController.dart';
+import 'package:myadhan/model/PrayerTimeModel.dart';
+import 'package:myadhan/providers/prayer_times_provider.dart';
 
-class CountdownTimer extends StatefulWidget {
+class CountdownTimer extends ConsumerStatefulWidget {
   final VoidCallback onFinish;
 
-  const CountdownTimer({required this.onFinish, Key? key}) : super(key: key);
+  const CountdownTimer({required this.onFinish, super.key});
 
   @override
-  _CountdownTimerState createState() => _CountdownTimerState();
+  ConsumerState<CountdownTimer> createState() => _CountdownTimerState();
 }
 
-class _CountdownTimerState extends State<CountdownTimer> {
-  late Timer timer;
-  Duration remaining = Duration.zero;
-  Duration countUp = Duration.zero;
-  bool isAdhanPhase = true;
-  String? lastPlayedPrayer;
-  final Duration iqamaDelay = Duration(minutes: 1);
-  final PrayerTimeController controller = PrayerTimeController();
+class _CountdownTimerState extends ConsumerState<CountdownTimer> {
+  static const _iqamaDelay = Duration(minutes: 1);
+  static const _textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 16);
+
+  final _controller = PrayerTimeController();
+  Timer? _timer;
+  Duration _remaining = Duration.zero;
+  Duration _countUp = Duration.zero;
+  bool _isAdhanPhase = true;
+  String? _lastPlayedPrayer;
+  DateTime? _targetTime;
+  DateTime? _iqamaStartTime;
+  String? _nextPrayerName;
+  String? _prayerTime;
 
   @override
-  void initState() {
-    super.initState();
-    loadPrayerTimesAndStartCountdown();
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
-  Future<void> loadPrayerTimesAndStartCountdown() async {
-    final prayerTimesData = await controller.getPrayerTimes();
-    final now = DateTime.now();
+  void _startCountdown(PrayerTimeModel data) {
+    _timer?.cancel();
 
-    final prayerTimes = <Map<String, String>>[
-      {
-        "name": "الفجر",
-        "time": DateFormat('HH:mm').format(prayerTimesData.fajer),
-      },
-      {
-        "name": "الظهر",
-        "time": DateFormat('HH:mm').format(prayerTimesData.dhuhr),
-      },
-      {
-        "name": "العصر",
-        "time": DateFormat('HH:mm').format(prayerTimesData.asr),
-      },
-      {
-        "name": "المغرب",
-        "time": DateFormat('HH:mm').format(prayerTimesData.maghrib),
-      },
-      {
-        "name": "العشاء",
-        "time": DateFormat('HH:mm').format(prayerTimesData.isha),
-      },
+    final prayers = [
+      (name: 'الفجر', time: data.fajer),
+      (name: 'الظهر', time: data.dhuhr),
+      (name: 'العصر', time: data.asr),
+      (name: 'المغرب', time: data.maghrib),
+      (name: 'العشاء', time: data.isha),
     ];
 
-    int nextIndex = getNextPrayerIndex(prayerTimes, now);
-    String nextPrayerName = prayerTimes[nextIndex]['name']!;
-    String prayerTime = prayerTimes[nextIndex]['time']!;
-    DateTime nextPrayerTime = getNextPrayerDateTime(
-      prayerTimes,
-      nextIndex,
-      now,
-    );
+    final now = DateTime.now();
+    final nextIndex = _findNextPrayerIndex(prayers, now);
+    final next = prayers[nextIndex];
+    
+    _nextPrayerName = next.name;
+    _prayerTime = DateFormat('HH:mm').format(next.time);
+    _targetTime = _getNextPrayerTime(next.time, now);
+    _isAdhanPhase = true;
+    _iqamaStartTime = null;
+    _countUp = Duration.zero;
+    _updateRemaining();
 
-    isAdhanPhase = true;
-    countUp = Duration.zero;
-    remaining = nextPrayerTime.difference(now);
-
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
       setState(() {
-        if (isAdhanPhase) {
-          remaining -= const Duration(seconds: 1);
-          if (remaining.inSeconds <= 0 && lastPlayedPrayer != nextPrayerName) {
-            isAdhanPhase = false;
-            lastPlayedPrayer = nextPrayerName;
-            controller.callNativeAdhanNow(nextPrayerName,prayerTime);
-            countUp = Duration.zero;
-          }
-        } else {
-          countUp += const Duration(seconds: 1);
-          if (countUp >= iqamaDelay) {
-            timer.cancel();
-            widget.onFinish();
-            loadPrayerTimesAndStartCountdown();
-          }
-        }
+        _updateRemaining();
+        _handlePhaseTransition();
       });
     });
   }
 
-  @override
-  void dispose() {
-    timer.cancel();
-    super.dispose();
+  void _updateRemaining() {
+    if (_targetTime != null) {
+      _remaining = _targetTime!.difference(DateTime.now());
+    }
+  }
+
+  void _handlePhaseTransition() {
+    if (_isAdhanPhase && _remaining.inSeconds <= 0 && _lastPlayedPrayer != _nextPrayerName) {
+      _isAdhanPhase = false;
+      _lastPlayedPrayer = _nextPrayerName;
+      _controller.callNativeAdhanNow(_nextPrayerName!, _prayerTime!);
+      _iqamaStartTime = DateTime.now();
+      _countUp = Duration.zero;
+    } else if (!_isAdhanPhase && _iqamaStartTime != null) {
+      _countUp = DateTime.now().difference(_iqamaStartTime!);
+      if (_countUp >= _iqamaDelay) {
+        _timer?.cancel();
+        widget.onFinish();
+        ref.read(prayerTimesProvider).whenData(_startCountdown);
+      }
+    }
+  }
+
+  int _findNextPrayerIndex(List<({String name, DateTime time})> prayers, DateTime now) {
+    for (int i = 0; i < prayers.length; i++) {
+      if (prayers[i].time.isAfter(now)) return i;
+    }
+    return 0;
+  }
+
+  DateTime _getNextPrayerTime(DateTime prayerTime, DateTime now) {
+    final candidate = DateTime(now.year, now.month, now.day, prayerTime.hour, prayerTime.minute);
+    return candidate.isBefore(now) ? candidate.add(const Duration(days: 1)) : candidate;
+  }
+
+  String _formatDuration(Duration d) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    return '${twoDigits(d.inHours)}:${twoDigits(d.inMinutes.remainder(60))}:${twoDigits(d.inSeconds.remainder(60))}';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      isAdhanPhase ? formatDuration(remaining) : formatDuration(countUp),
-      style: TextStyle(
-        color: isAdhanPhase ? const Color(0xffF0F8FF) : Colors.red,
-        fontWeight: FontWeight.bold,
-        fontSize: 16,
-      ),
+    return ref.watch(prayerTimesProvider).when(
+      loading: () => Text('00:00:00', style: _textStyle.copyWith(color: const Color(0xffF0F8FF))),
+      error: (_, __) => Text('--:--:--', style: _textStyle.copyWith(color: Colors.red)),
+      data: (data) {
+        if (_targetTime == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _startCountdown(data));
+        }
+        return Text(
+          _formatDuration(_isAdhanPhase ? _remaining : _countUp),
+          style: _textStyle.copyWith(color: _isAdhanPhase ? const Color(0xffF0F8FF) : Colors.red),
+        );
+      },
     );
-  }
-
-  // Gets the index of the next upcoming prayer
-  int getNextPrayerIndex(List<Map<String, String>> prayerTimes, DateTime now) {
-    for (int i = 0; i < prayerTimes.length; i++) {
-      final time = prayerTimes[i]['time']!;
-      final parts = time.split(':');
-      final hour = int.parse(parts[0]);
-      final minute = int.parse(parts[1]);
-      final prayerTime = DateTime(now.year, now.month, now.day, hour, minute);
-
-      if (prayerTime.isAfter(now)) {
-        return i;
-      }
-    }
-    return 0; // Next is Fajr of tomorrow
-  }
-
-  // Gets the DateTime of the next prayer, even if it's tomorrow
-  DateTime getNextPrayerDateTime(
-    List<Map<String, String>> prayerTimes,
-    int index,
-    DateTime now,
-  ) {
-    final parts = prayerTimes[index]['time']!.split(':');
-    int hour = int.parse(parts[0]);
-    int minute = int.parse(parts[1]);
-
-    DateTime candidate = DateTime(now.year, now.month, now.day, hour, minute);
-    if (candidate.isBefore(now)) {
-      // If time already passed, prayer is tomorrow
-      candidate = candidate.add(Duration(days: 1));
-    }
-    return candidate;
-  }
-
-  // Format duration into HH:mm:ss
-  String formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    return "${twoDigits(duration.inHours)}:"
-        "${twoDigits(duration.inMinutes.remainder(60))}:"
-        "${twoDigits(duration.inSeconds.remainder(60))}";
   }
 }

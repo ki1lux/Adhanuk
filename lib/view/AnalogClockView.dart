@@ -1,15 +1,8 @@
-// import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-// import 'package:flutter/scheduler.dart';
 import 'package:myadhan/controller/ClockController.dart';
 import 'package:myadhan/model/ClockModel.dart';
 import 'package:intl/intl.dart';
-// import 'package:timezone/data/latest.dart';
-// import 'package:timezone/data/latest.dart' as tz;
-// import 'package:timezone/data/latest_10y.dart';
-// import 'package:timezone/timezone.dart' as tz;
 
 class Analogclockview extends StatefulWidget {
   const Analogclockview({super.key});
@@ -53,14 +46,23 @@ class _AnalogclockviewState extends State<Analogclockview> {
     super.initState();
     controller = ClockController(
       onTick: (newModel) {
-        setState(() {
-          model = ClockModel(DateTime.now());
-          time = DateTime.now();
-          timeAfterReform = DateFormat('h:mm a').format(time);
-        });
+        // Check if widget is still mounted before calling setState
+        if (mounted) {
+          setState(() {
+            model = ClockModel(DateTime.now());
+            time = DateTime.now();
+            timeAfterReform = DateFormat('h:mm a').format(time);
+          });
+        }
       },
     );
     model = ClockModel(DateTime.now());
+  }
+
+  @override
+  void dispose() {
+    controller.dispose(); // Cancel the timer to prevent memory leaks
+    super.dispose();
   }
 
   @override
