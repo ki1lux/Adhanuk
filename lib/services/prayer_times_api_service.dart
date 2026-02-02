@@ -40,12 +40,12 @@ class PrayerTimesApiService {
   PrayerTimesApiService({http.Client? client}) : _client = client ?? http.Client();
 
   /// Fetches prayer times for the given coordinates
-  /// [method] 1 = University of Islamic Sciences, Karachi
+  /// [method] 19 = Algeria
   /// [school] 0 = Shafi, 1 = Hanafi
   Future<AladhanApiResponse> fetchPrayerTimes({
     required double latitude,
     required double longitude,
-    int method = 1,
+    int method = 19,
     int school = 0,
   }) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
