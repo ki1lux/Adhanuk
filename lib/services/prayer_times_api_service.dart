@@ -41,7 +41,7 @@ class PrayerTimesApiService {
 
   /// Fetches prayer times for the given coordinates
   /// [method] 19 = Algeria
-  /// [school] 0 = Shafi, 1 = Hanafi
+  /// [school] 0 = Shafi 
   Future<AladhanApiResponse> fetchPrayerTimes({
     required double latitude,
     required double longitude,
