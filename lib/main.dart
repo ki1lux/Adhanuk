@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myadhan/model/PrayerTimeModel.dart';
 import 'package:myadhan/prayer_alarm_scheduler.dart';
 import 'package:myadhan/providers/prayer_times_provider.dart';
+import 'package:myadhan/services/daily_prayer_updater.dart';
 import 'package:myadhan/view/QiblaScreen.dart';
 import 'package:myadhan/view/PrayerTimeScreen.dart';
 import 'dart:ui';
@@ -19,6 +20,10 @@ import 'package:timezone/timezone.dart' as tz;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
+  
+  // Initialize daily background updater for prayer times
+  await DailyPrayerUpdater.initialize();
+  
   runApp(const ProviderScope(child: MyApp()));
 }
 
