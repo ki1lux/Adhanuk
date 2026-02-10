@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:myadhan/model/PrayerTimeModel.dart';
+import 'package:myadhan/prayer_alarm_scheduler.dart';
 import 'package:myadhan/providers/prayer_times_provider.dart';
 import 'package:myadhan/view/CountDown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -410,43 +411,146 @@ Future<void> _loadSavedLocation() async {
   Widget _buildPrayerCard(String name, String time, bool isNext) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18, right: 12, left: 12),
-      child: ClipRRect(
+      child: InkWell(
+        onTap: () => _showSoundDialog(name),
         borderRadius: BorderRadius.circular(36),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
-          child: Container(
-            height: 76,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(36),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Icon(Icons.volume_up, color: Color(0xffF0F8FF)),
-                  if (isNext) CountdownTimer(onFinish: () => setState(() {})) else const SizedBox.shrink(),
-                  const SizedBox(width: 64),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(name, style: const TextStyle(
-                          fontFamily: 'Cairo', color: Color(0xffF0F8FF), fontWeight: FontWeight.w500, fontSize: 16,
-                        )),
-                        const SizedBox(height: 2),
-                        Text(time, style: const TextStyle(
-                          fontFamily: 'Cairo', color: Color(0xffF0F8FF), fontWeight: FontWeight.w100, fontSize: 14,
-                        )),
-                      ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(36),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
+            child: Container(
+              height: 76,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(36),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    FutureBuilder<bool>(
+                      future: _isAdhanEnabled(name),
+                      builder: (context, snapshot) {
+                        final enabled = snapshot.data ?? true;
+                        return Icon(
+                          enabled ? Icons.volume_up : Icons.volume_off,
+                          color: enabled ? const Color(0xffF0F8FF) : Colors.white38,
+                        );
+                      },
                     ),
-                  ),
-                ],
+                    if (isNext) CountdownTimer(onFinish: () => setState(() {})) else const SizedBox.shrink(),
+                    const SizedBox(width: 64),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(name, style: const TextStyle(
+                            fontFamily: 'Cairo', color: Color(0xffF0F8FF), fontWeight: FontWeight.w500, fontSize: 16,
+                          )),
+                          const SizedBox(height: 2),
+                          Text(time, style: const TextStyle(
+                            fontFamily: 'Cairo', color: Color(0xffF0F8FF), fontWeight: FontWeight.w100, fontSize: 14,
+                          )),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _isAdhanEnabled(String prayerName) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('adhan_enabled_$prayerName') ?? true;
+  }
+
+  void _showSoundDialog(String prayerName) async {
+    final prefs = await SharedPreferences.getInstance();
+    bool isEnabled = prefs.getBool('adhan_enabled_$prayerName') ?? true;
+    String selectedSound = prefs.getString('adhan_sound_$prayerName') ?? 'adhan1';
+
+    // Available sounds - add more as you add mp3 files
+    final sounds = [
+      {'id': 'adhan1', 'name': 'الأذان الأول'},
+      {'id': 'adhan2', 'name': 'أذان مكة'},
+      {'id': 'adhan3', 'name': 'أذان المدينة'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 8, 42, 73),
+          title: Text(
+            'إعدادات $prayerName',
+            style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+            textAlign: TextAlign.right,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Enable/Disable toggle
+              SwitchListTile(
+                title: const Text(
+                  'تفعيل الأذان',
+                  style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+                  textAlign: TextAlign.right,
+                ),
+                value: isEnabled,
+                activeColor: const Color.fromARGB(255, 31, 125, 233),
+                onChanged: (value) {
+                  setDialogState(() => isEnabled = value);
+                },
+              ),
+              const Divider(color: Colors.white24),
+              // Sound selection
+              const Text(
+                'اختر نغمة الأذان',
+                style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              ...sounds.map((sound) => RadioListTile<String>(
+                title: Text(
+                  sound['name']!,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+                ),
+                value: sound['id']!,
+                groupValue: selectedSound,
+                activeColor: Color.fromARGB(255, 31, 125, 233),
+                onChanged: isEnabled ? (value) {
+                  setDialogState(() => selectedSound = value!);
+                } : null,
+              )),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+            ),
+            TextButton(
+              onPressed: () async {
+                await prefs.setBool('adhan_enabled_$prayerName', isEnabled);
+                await prefs.setString('adhan_sound_$prayerName', selectedSound);
+                Navigator.pop(context);
+                setState(() {}); // Refresh UI to show icon change
+                
+                // 🔄 Reschedule notifications with new settings
+                final prayerTimesAsync = ref.read(prayerTimesProvider);
+                if (prayerTimesAsync.hasValue) {
+                  await PrayerAlarmScheduler.scheduleAllPrayersWithData(prayerTimesAsync.value!);
+                }
+              },
+              child: const Text('حفظ', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+            ),
+          ],
         ),
       ),
     );

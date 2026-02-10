@@ -33,26 +33,29 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
 
   /// Gets coordinates from GPS or saved location
   Future<({double lat, double lng})> _getCoordinates() async {
+    final prefs = await SharedPreferences.getInstance();
+    
     try {
       final position = await _locationController.determinePosition()
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 10));
       
       // Cache location for offline use
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble('last_latitude', position.latitude);
       await prefs.setDouble('last_longitude', position.longitude);
       
       return (lat: position.latitude, lng: position.longitude);
-    } catch (_) {
+    } catch (e) {
+      print('⚠️ GPS failed: $e');
+      
       // Fallback to cached location
-      final prefs = await SharedPreferences.getInstance();
       final savedLat = prefs.getDouble('last_latitude');
       final savedLng = prefs.getDouble('last_longitude');
       
       if (savedLat != null && savedLng != null) {
+        print('📍 Using cached location');
         return (lat: savedLat, lng: savedLng);
       }
-      throw Exception('No location available. Please enable GPS.');
+      throw Exception('لا يوجد موقع. يرجى تفعيل GPS أو البحث عن مدينة.');
     }
   }
 

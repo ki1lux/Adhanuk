@@ -33,7 +33,7 @@ class AladhanApiResponse {
 /// API Docs: https://aladhan.com/prayer-times-api
 class PrayerTimesApiService {
   static const _baseUrl = 'https://api.aladhan.com/v1/timings';
-  static const _timeout = Duration(seconds: 10);
+  static const _timeout = Duration(seconds: 20);
 
   final http.Client _client;
 

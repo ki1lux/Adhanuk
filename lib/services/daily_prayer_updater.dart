@@ -125,6 +125,7 @@ Future<Map<String, DateTime>?> _fetchPrayerTimesFromApi(double lat, double lng) 
 /// Schedule notifications for all prayers
 Future<void> _scheduleNotifications(Map<String, DateTime> prayerTimes) async {
   final plugin = FlutterLocalNotificationsPlugin();
+  final prefs = await SharedPreferences.getInstance();
   
   // Initialize plugin
   const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -144,6 +145,18 @@ Future<void> _scheduleNotifications(Map<String, DateTime> prayerTimes) async {
   ];
   
   for (final prayer in prayers) {
+    final name = prayer['name'] as String;
+    
+    // Check if adhan is enabled for this prayer
+    final isEnabled = prefs.getBool('adhan_enabled_$name') ?? true;
+    if (!isEnabled) {
+      print('⏭️ Skipping $name - adhan disabled');
+      continue;
+    }
+    
+    // Get selected sound for this prayer
+    final soundName = prefs.getString('adhan_sound_$name') ?? 'adhan1';
+    
     var scheduledTime = prayer['time'] as DateTime;
     
     // If time passed, schedule for tomorrow
@@ -156,10 +169,10 @@ Future<void> _scheduleNotifications(Map<String, DateTime> prayerTimes) async {
     
     await plugin.zonedSchedule(
       prayer['id'] as int,
-      'حان وقت صلاة ${prayer['name']}',
+      'حان وقت صلاة $name',
       'الوقت: $timeStr',
       tzTime,
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'prayer_notification_channel',
           'Prayer Notifications',
@@ -167,13 +180,13 @@ Future<void> _scheduleNotifications(Map<String, DateTime> prayerTimes) async {
           importance: Importance.max,
           priority: Priority.high,
           playSound: true,
-          sound: RawResourceAndroidNotificationSound('adhan1'),
+          sound: RawResourceAndroidNotificationSound(soundName),
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
     
-    print('📿 Scheduled ${prayer['name']} at $tzTime');
+    print('📿 Scheduled $name at $tzTime (sound: $soundName)');
   }
 }

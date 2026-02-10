@@ -15,6 +15,12 @@ class PrayerAlarmScheduler {
   /// Schedule all prayer alarms using provided PrayerTimeModel data
   /// This is the Riverpod-friendly version that receives prayer times as parameter
   static Future<void> scheduleAllPrayersWithData(PrayerTimeModel data) async {
+    // ⚠️ CRITICAL: Initialize the plugin before using it
+    const androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
+    const iosSettings = DarwinInitializationSettings();
+    const settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+    await _notificationsPlugin.initialize(settings);
+    
     // Cancel any existing alarms first
     await cancelAll();
 
@@ -35,6 +41,16 @@ class PrayerAlarmScheduler {
       DateTime prayerTime = prayer['time'] as DateTime;
       String timeStr = DateFormat('HH:mm').format(prayerTime);
 
+      // Check if adhan is enabled for this prayer
+      bool isEnabled = prefs.getBool('adhan_enabled_$name') ?? true;
+      if (!isEnabled) {
+        print('⏭️ Skipping $name - adhan disabled');
+        continue;
+      }
+
+      // Get selected sound for this prayer
+      String soundName = prefs.getString('adhan_sound_$name') ?? 'adhan1';
+
       // Build scheduled DateTime for today
       var scheduledTime = DateTime(
         now.year,
@@ -49,22 +65,23 @@ class PrayerAlarmScheduler {
         scheduledTime = scheduledTime.add(const Duration(days: 1));
       }
 
-      // Store prayer info (optional, but good for persistence checks if needed)
+      // Store prayer info
       await prefs.setString('prayer_${id}_name', name);
       await prefs.setString('prayer_${id}_time', timeStr);
 
-      // Schedule standard local notification
-      await _scheduleLocalNotification(id, name, timeStr, scheduledTime);
-      print('Local notification scheduled for $name at $scheduledTime (ID: $id)');
+      // Schedule notification with selected sound
+      await _scheduleLocalNotification(id, name, timeStr, scheduledTime, soundName);
+      print('✅ Notification scheduled for $name at $scheduledTime (sound: $soundName)');
     }
   }
 
-  /// Schedule a single local notification as fallback
+  /// Schedule a single local notification with custom sound
   static Future<void> _scheduleLocalNotification(
     int id,
     String name,
     String timeStr,
     DateTime scheduledTime,
+    String soundName,
   ) async {
     final tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
 
@@ -73,7 +90,7 @@ class PrayerAlarmScheduler {
       'حان وقت صلاة $name',
       'الوقت: $timeStr',
       tzScheduledTime,
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'prayer_notification_channel',
           'Prayer Notifications',
@@ -81,14 +98,14 @@ class PrayerAlarmScheduler {
           importance: Importance.max,
           priority: Priority.high,
           playSound: true,
-          sound: RawResourceAndroidNotificationSound('adhan1'),
-          actions: [AndroidNotificationAction(
+          sound: RawResourceAndroidNotificationSound(soundName),
+          actions: [const AndroidNotificationAction(
               'stop_audio_id', 
-              'الغاء ',    
+              'إلغاء',    
               cancelNotification: true, 
           ),]
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: const DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:myadhan/prayer_alarm_scheduler.dart';
-import 'package:geolocator/geolocator.dart'; // Added for openAppSettings
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -93,6 +93,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _settingsButtons(Icons.build, "Troubleshoot Alarm", () {
                   _showTroubleshootDialog();
                 }),
+                _settingsButtons(Icons.battery_alert, "تعطيل تحسين البطارية", () {
+                  _openBatteryOptimizationSettings();
+                }),
                 _settingsButtons(Icons.mosque, "Adhani\nversion : 1.0", () {}),
 
                 const SizedBox(height: 32),
@@ -155,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: const Color(0xFF2D4356),
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
-          onTap: () {},
+          onTap: onTap,
           child: Container(
             height: 64,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -288,7 +291,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   "2. تحسين البطارية (Battery Optimization)",
                   "بعض الهواتف توقف التطبيق في الخلفية. يرجى استثناء التطبيق من تحسين البطارية.",
                   () async {
-                     await Geolocator.openAppSettings();
+                     const channel = MethodChannel('com.myadhan/notification');
+                     await channel.invokeMethod('openBatterySettings');
                   },
                 ),
                 SizedBox(height: 16),
@@ -353,6 +357,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
               "اضغط هنا للتحقق / الإصلاح",
               style: TextStyle(color: Colors.blueAccent, fontSize: 12),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Opens Android battery optimization settings for this app
+  /// This helps users disable battery restrictions that delay notifications
+  void _openBatteryOptimizationSettings() async {
+    // Show explanation dialog first
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xff0A2239),
+        title: const Text(
+          'تعطيل تحسين البطارية',
+          style: TextStyle(color: Colors.white, fontFamily: 'cairo'),
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.battery_alert, color: Colors.orange, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'لضمان وصول إشعارات الصلاة في وقتها بدقة:\n\n'
+              '1. اضغط "فتح الإعدادات"\n'
+              '2. ابحث عن التطبيق واختر "غير مُحسّن"\n'
+              '3. هذا يمنع Android من تأخير الإشعارات',
+              style: TextStyle(color: Colors.white70, fontFamily: 'cairo', height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              // Open battery optimization settings using native channel
+              try {
+                const channel = MethodChannel('com.myadhan/notification');
+                await channel.invokeMethod('openBatterySettings');
+              } catch (e) {
+                // Fallback: open general Android settings
+                final uri = Uri.parse('package:com.example.myadhan');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('فتح الإعدادات', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

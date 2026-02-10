@@ -95,6 +95,24 @@ class MainActivity : FlutterActivity(){
                     scheduleNativeAlarm(999, triggerTime) // ID 999 for test
                     result.success("Test alarm scheduled for 10 seconds from now")
                 }
+                "openBatterySettings" -> {
+                    try {
+                        // Try to open battery optimization settings directly
+                        val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        // Fallback: open app details settings
+                        try {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            intent.data = android.net.Uri.parse("package:$packageName")
+                            startActivity(intent)
+                            result.success(true)
+                        } catch (e2: Exception) {
+                            result.error("ERROR", "Could not open settings", null)
+                        }
+                    }
+                }
                 else -> {
                     result.notImplemented()
                 }
