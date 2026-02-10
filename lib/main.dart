@@ -36,7 +36,6 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> {
   final _notificationsPlugin = FlutterLocalNotificationsPlugin();
-  final _pageController = PageController();
   int _selectedIndex = 0;
   bool _notificationsScheduled = false;
 
@@ -61,7 +60,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Africa/Algiers'));
 
-    const androidSettings = AndroidInitializationSettings('ic_stat_adhan');
+    const androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
     const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     
@@ -110,13 +109,24 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(scaffoldBackgroundColor: const Color(0xff0A2239),
+      canvasColor: const Color(0xff0A2239)),
       home: Scaffold(
         extendBody: true,
-        body: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(), // Disable swipe, only navbar controls
-          onPageChanged: (index) => setState(() => _selectedIndex = index),
-          children: _pages,
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          child: KeyedSubtree(
+            key: ValueKey<int>(_selectedIndex),
+            child: _pages[_selectedIndex],
+          ),
         ),
         bottomNavigationBar: _buildBottomNav(),
       ),
@@ -157,15 +167,12 @@ class _MyAppState extends ConsumerState<MyApp> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+
           splashColor: const Color.fromARGB(255, 14, 43, 70),
           highlightColor: const Color(0xff0A2239),
           hoverColor: const Color(0xff0A2239),
           onTap: () {
-            _pageController.animateToPage(
-              index,
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-            );
+            setState(() => _selectedIndex = index);
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
