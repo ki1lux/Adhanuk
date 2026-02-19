@@ -8,6 +8,7 @@ class AladhanApiResponse {
   final String asr;
   final String maghrib;
   final String isha;
+  final String dateOnHijri;
 
   const AladhanApiResponse({
     required this.fajr,
@@ -15,16 +16,20 @@ class AladhanApiResponse {
     required this.asr,
     required this.maghrib,
     required this.isha,
+    required this.dateOnHijri,
   });
 
   factory AladhanApiResponse.fromJson(Map<String, dynamic> json) {
     final timings = json['data']['timings'] as Map<String, dynamic>;
+    final date = json['data']['date']['hijri'];
+    final hijriStr = '${date['day']} ${date['month']['ar']} ${date['year']}';
     return AladhanApiResponse(
       fajr: timings['Fajr'] as String,
       dhuhr: timings['Dhuhr'] as String,
       asr: timings['Asr'] as String,
       maghrib: timings['Maghrib'] as String,
       isha: timings['Isha'] as String,
+      dateOnHijri: hijriStr,
     );
   }
 }
@@ -37,11 +42,12 @@ class PrayerTimesApiService {
 
   final http.Client _client;
 
-  PrayerTimesApiService({http.Client? client}) : _client = client ?? http.Client();
+  PrayerTimesApiService({http.Client? client})
+    : _client = client ?? http.Client();
 
   /// Fetches prayer times for the given coordinates
   /// [method] 19 = Algeria
-  /// [school] 0 = Shafi 
+  /// [school] 0 = Shafi
   Future<AladhanApiResponse> fetchPrayerTimes({
     required double latitude,
     required double longitude,
@@ -60,7 +66,7 @@ class PrayerTimesApiService {
     }
 
     final jsonData = json.decode(response.body) as Map<String, dynamic>;
-    
+
     if (jsonData['code'] != 200) {
       throw Exception('API error: ${jsonData['status']}');
     }

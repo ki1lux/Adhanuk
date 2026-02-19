@@ -42,6 +42,7 @@ class PrayerTimeController {
       asr: prayerTimes.asr,
       maghrib: prayerTimes.maghrib,
       isha: prayerTimes.isha,
+      dateOnHijri: '',
     );
   }
 

@@ -81,12 +81,15 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
         asr: _parseTimeString(response.asr),
         maghrib: _parseTimeString(response.maghrib),
         isha: _parseTimeString(response.isha),
+        dateOnHijri: response.dateOnHijri.toString(),
       ));
     } catch (e, st) {
       print('❌ Error fetching prayer times: $e');
       state = AsyncValue.error(e, st);
     }
   }
+
+  
 
   /// Refresh prayer times
   Future<void> refresh() => fetchPrayerTimes();

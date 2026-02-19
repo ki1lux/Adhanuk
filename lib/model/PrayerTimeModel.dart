@@ -4,6 +4,7 @@ class PrayerTimeModel {
   final DateTime asr;
   final DateTime maghrib;
   final DateTime isha;
+  final String dateOnHijri;
 
   PrayerTimeModel({
     required this.fajer,
@@ -11,5 +12,6 @@ class PrayerTimeModel {
     required this.asr,
     required this.maghrib,
     required this.isha,
+    required this.dateOnHijri
   });
 }
