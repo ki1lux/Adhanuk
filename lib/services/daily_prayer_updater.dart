@@ -128,7 +128,7 @@ Future<void> _scheduleNotifications(Map<String, DateTime> prayerTimes) async {
   final prefs = await SharedPreferences.getInstance();
   
   // Initialize plugin
-  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
   const settings = InitializationSettings(android: androidSettings);
   await plugin.initialize(settings);
   
