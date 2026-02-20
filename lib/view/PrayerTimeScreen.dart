@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:ui';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -22,53 +24,55 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
   String _countryText = 'الموقع...';
   String _cityText = '';
 
-@override
-void initState() {
-  super.initState();
-  _loadSavedLocation();
-}
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLocation();
+  }
 
-Future<void> _loadLocation() async {
-  try {
+  Future<void> _loadLocation() async {
+    try {
+      final position = await Geolocator.getCurrentPosition();
 
-    final position = await Geolocator.getCurrentPosition();
+      // save location
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('lat', position.latitude);
+      await prefs.setDouble('lon', position.longitude);
 
-    // save location
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('lat', position.latitude);
-    await prefs.setDouble('lon', position.longitude);
+      // converting coordinates to country and city name
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
 
-    // converting coordinates to country and city name
-    final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
-    
-    if (placemarks.isNotEmpty) {
-      String country = placemarks[0].country ?? '';
-      String city = placemarks[0].locality ?? '';
-      
-      // save names of country and city for quick access
-      await prefs.setString('country_name', country);
-      await prefs.setString('city_name', city);
+      if (placemarks.isNotEmpty) {
+        String country = placemarks[0].country ?? '';
+        String city = placemarks[0].locality ?? '';
 
-      _updateLocation(country, city);
+        // save names of country and city for quick access
+        await prefs.setString('country_name', country);
+        await prefs.setString('city_name', city);
+
+        _updateLocation(country, city);
+      }
+    } catch (e) {
+      print("Error: $e");
     }
-  } catch (e) {
-    print("Error: $e");
   }
-}
 
-// set saved location if it exist
-Future<void> _loadSavedLocation() async {
-  final prefs = await SharedPreferences.getInstance();
-  String? savedCountry = prefs.getString('country_name');
-  String? savedCity = prefs.getString('city_name');
+  // set saved location if it exist
+  Future<void> _loadSavedLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? savedCountry = prefs.getString('country_name');
+    String? savedCity = prefs.getString('city_name');
 
-  if (savedCountry != null) {
-    _updateLocation(savedCountry, savedCity ?? '');
-  } else {
-    // if location not available , search for it
-    _loadLocation();
+    if (savedCountry != null) {
+      _updateLocation(savedCountry, savedCity ?? '');
+    } else {
+      // if location not available , search for it
+      _loadLocation();
+    }
   }
-}
 
   void _updateLocation(String country, String city) {
     if (mounted) {
@@ -83,7 +87,10 @@ Future<void> _loadSavedLocation() async {
     final now = TimeOfDay.now();
     for (int i = 0; i < prayers.length; i++) {
       final parts = prayers[i].time.split(':');
-      final prayerTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      final prayerTime = TimeOfDay(
+        hour: int.parse(parts[0]),
+        minute: int.parse(parts[1]),
+      );
       if (prayerTime.hour > now.hour ||
           (prayerTime.hour == now.hour && prayerTime.minute > now.minute)) {
         return i;
@@ -126,13 +133,22 @@ Future<void> _loadSavedLocation() async {
             const SizedBox(height: 24),
             const Text(
               'جاري التحميل...',
-              style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontSize: 16),
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Cairo',
+                fontSize: 16,
+              ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => ref.read(prayerTimesProvider.notifier).fetchPrayerTimes(),
+              onPressed:
+                  () =>
+                      ref.read(prayerTimesProvider.notifier).fetchPrayerTimes(),
               icon: const Icon(Icons.refresh),
-              label: const Text('تحديث الصفحة', style: TextStyle(fontFamily: 'Cairo')),
+              label: const Text(
+                'تحديث الصفحة',
+                style: TextStyle(fontFamily: 'Cairo'),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white24,
                 foregroundColor: Colors.white,
@@ -151,9 +167,16 @@ Future<void> _loadSavedLocation() async {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('حدث خطأ', style: TextStyle(color: Colors.red, fontSize: 18)),
+            const Text(
+              'حدث خطأ',
+              style: TextStyle(color: Colors.red, fontSize: 18),
+            ),
             const SizedBox(height: 8),
-            Text('$error', style: const TextStyle(color: Colors.red, fontSize: 14), textAlign: TextAlign.center),
+            Text(
+              '$error',
+              style: const TextStyle(color: Colors.red, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.read(prayerTimesProvider.notifier).refresh(),
@@ -173,12 +196,23 @@ Future<void> _loadSavedLocation() async {
       backgroundColor: const Color(0xff0A2239),
       body: Stack(
         children: [
-          SvgPicture.asset('assets/Vector.svg', fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+          SvgPicture.asset(
+            'assets/Vector.svg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
           Column(
             children: [
               _buildLocationHeader(),
               const SizedBox(height: 64),
-              ...prayers.asMap().entries.map((e) => _buildPrayerCard(e.value.name, e.value.time, e.key == nextIndex)),
+              ...prayers.asMap().entries.map(
+                (e) => _buildPrayerCard(
+                  e.value.name,
+                  e.value.time,
+                  e.key == nextIndex,
+                ),
+              ),
             ],
           ),
         ],
@@ -199,16 +233,28 @@ Future<void> _loadSavedLocation() async {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(_countryText, style: const TextStyle(
-                  color: Color(0xffF0F8FF), fontFamily: 'Cairo', fontSize: 38, fontWeight: FontWeight.bold,
-                )),
+                Text(
+                  _countryText,
+                  style: const TextStyle(
+                    color: Color(0xffF0F8FF),
+                    fontFamily: 'Cairo',
+                    fontSize: 38,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 Row(
                   children: [
                     const Icon(Icons.edit, color: Colors.white54, size: 14),
                     const SizedBox(width: 4),
-                    Text(_cityText, style: const TextStyle(
-                      color: Color(0xffF0F8FF), fontFamily: 'Cairo', fontSize: 24, fontWeight: FontWeight.w100,
-                    )),
+                    Text(
+                      _cityText,
+                      style: const TextStyle(
+                        color: Color(0xffF0F8FF),
+                        fontFamily: 'Cairo',
+                        fontSize: 24,
+                        fontWeight: FontWeight.w100,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -222,146 +268,229 @@ Future<void> _loadSavedLocation() async {
 
   void _showLocationDialog() {
     final cityController = TextEditingController();
-    List<Location> suggestions = [];
+    List<Map<String, dynamic>> suggestions = [];
     bool isSearching = false;
-    
+
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF2D4356),
-          title: const Text(
-            'تغيير الموقع',
-            style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
-            textAlign: TextAlign.right,
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: cityController,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'أدخل اسم المدينة (بالإنجليزية)',
-                    hintStyle: const TextStyle(color: Colors.white54),
-                    suffixIcon: isSearching 
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: Padding(
-                              padding: EdgeInsets.all(12),
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  backgroundColor: const Color(0xFF0E2031),
+                  title: const Text(
+                    'تغيير الموقع',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 24,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  content: SizedBox(
+                    height: 222,
+                    width: double.maxFinite,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(height: 24),
+                        TextField(
+                          controller: cityController,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'أدخل اسم المدينة (بالإنجليزية)',
+                            hintStyle: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 16,
                             ),
-                          )
-                        : null,
-                    enabledBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white54),
-                    ),
-                    focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
-                  ),
-                  onChanged: (value) async {
-                    if (value.length >= 3) {
-                      setDialogState(() => isSearching = true);
-                      try {
-                        final results = await locationFromAddress(value);
-                        setDialogState(() {
-                          suggestions = results.take(5).toList();
-                          isSearching = false;
-                        });
-                      } catch (_) {
-                        setDialogState(() {
-                          suggestions = [];
-                          isSearching = false;
-                        });
-                      }
-                    } else {
-                      setDialogState(() => suggestions = []);
-                    }
-                  },
-                ),
-                if (suggestions.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 150),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: suggestions.length,
-                      itemBuilder: (context, index) {
-                        final loc = suggestions[index];
-                        return FutureBuilder<List<Placemark>>(
-                          future: placemarkFromCoordinates(loc.latitude, loc.longitude),
-                          builder: (context, snapshot) {
-                            final name = snapshot.hasData && snapshot.data!.isNotEmpty
-                                ? '${snapshot.data![0].locality ?? ''}, ${snapshot.data![0].country ?? ''}'
-                                : '${loc.latitude.toStringAsFixed(2)}, ${loc.longitude.toStringAsFixed(2)}';
-                            return ListTile(
-                              dense: true,
-                              leading: const Icon(Icons.location_on, color: Colors.white54, size: 20),
-                              title: Text(
-                                name,
-                                style: const TextStyle(color: Colors.white, fontSize: 14),
-                              ),
-                              onTap: () async {
-                                Navigator.pop(context);
-                                // Save and use this location
-                                final prefs = await SharedPreferences.getInstance();
-                                await prefs.setDouble('last_latitude', loc.latitude);
-                                await prefs.setDouble('last_longitude', loc.longitude);
-                                
-                                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                                  _updateLocation(
-                                    snapshot.data![0].country ?? '',
-                                    snapshot.data![0].locality ?? '',
+                            suffixIcon:
+                                isSearching
+                                    ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: Padding(
+                                        padding: EdgeInsets.all(12),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 1,
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                    )
+                                    : null,
+                            enabledBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white54),
+                            ),
+                            focusedBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
+                          ),
+                          onChanged: (value) async {
+                            if (value.length >= 3) {
+                              setDialogState(() => isSearching = true);
+                              try {
+                                // Use Nominatim API for better city suggestions
+                                final uri = Uri.parse(
+                                  'https://nominatim.openstreetmap.org/search?q=$value&format=json&limit=5&addressdetails=1&accept-language=ar',
+                                );
+                                final response = await http.get(
+                                  uri,
+                                  headers: {'User-Agent': 'AdhanUK-App/1.0'},
+                                );
+                                if (response.statusCode == 200) {
+                                  final List<dynamic> data = json.decode(
+                                    response.body,
                                   );
+                                  final List<Map<String, dynamic>> results =
+                                      data
+                                          .map(
+                                            (item) => {
+                                              'name':
+                                                  item['display_name']
+                                                      as String,
+                                              'lat': double.parse(
+                                                item['lat'] as String,
+                                              ),
+                                              'lon': double.parse(
+                                                item['lon'] as String,
+                                              ),
+                                            },
+                                          )
+                                          .toList();
+                                  setDialogState(() {
+                                    suggestions = results;
+                                    isSearching = false;
+                                  });
+                                } else {
+                                  setDialogState(() {
+                                    suggestions = [];
+                                    isSearching = false;
+                                  });
                                 }
-                                ref.read(prayerTimesProvider.notifier).fetchPrayerTimes();
-                              },
-                            );
+                              } catch (_) {
+                                setDialogState(() {
+                                  suggestions = [];
+                                  isSearching = false;
+                                });
+                              }
+                            } else {
+                              setDialogState(() => suggestions = []);
+                            }
                           },
-                        );
-                      },
+                        ),
+                        if (suggestions.isNotEmpty) ...[
+                          const SizedBox(height: 18),
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 150),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: suggestions.length,
+                              itemBuilder: (context, index) {
+                                final loc = suggestions[index];
+                                final name = loc['name'] as String;
+                                // Shorten the display name (take first 2 parts)
+                                final shortName =
+                                    name.split(',').take(2).join(',').trim();
+                                final parts = shortName.split(',');
+                                final cityName = parts.first.trim();
+                                final countryName = parts.length > 1 
+                                    ? parts[1].trim() 
+                                    : cityName;
+                                return ListTile(
+                                  dense: true,
+                                  leading: const Icon(
+                                    Icons.location_on,
+                                    color: Colors.white54,
+                                    size: 20,
+                                  ),
+                                  title: Text(
+                                    shortName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onTap: () async {
+                                    Navigator.pop(context);
+                                    final lat = loc['lat'] as double;
+                                    final lon = loc['lon'] as double;
+                                    // Save location and names
+                                    final prefs =
+                                        await SharedPreferences.getInstance();
+                                    await prefs.setDouble('last_latitude', lat);
+                                    await prefs.setDouble('last_longitude', lon);
+                                    await prefs.setString('country_name', countryName);
+                                    await prefs.setString('city_name', cityName);
+
+                                    _updateLocation(countryName, cityName);
+                                    ref
+                                        .read(prayerTimesProvider.notifier)
+                                        .fetchPrayerTimes();
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 72),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _loadLocation();
+                          },
+                          icon: const Icon(Icons.my_location),
+                          label: const Text(
+                            'استخدم GPS',
+                            style: TextStyle(fontFamily: 'Cairo'),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              255,
+                              255,
+                              255,
+                            ),
+                            foregroundColor: Color(0xff0E2031),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _loadLocation();
-                  },
-                  icon: const Icon(Icons.my_location),
-                  label: const Text('استخدم GPS', style: TextStyle(fontFamily: 'Cairo')),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white24,
-                    foregroundColor: Colors.white,
-                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'إلغاء',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontFamily: 'Cairo',
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        final city = cityController.text.trim();
+                        if (city.isNotEmpty) {
+                          Navigator.pop(context);
+                          await _searchAndSetLocation(city);
+                        }
+                      },
+                      child: const Text(
+                        'بحث',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Cairo',
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
-            ),
-            TextButton(
-              onPressed: () async {
-                final city = cityController.text.trim();
-                if (city.isNotEmpty) {
-                  Navigator.pop(context);
-                  await _searchAndSetLocation(city);
-                }
-              },
-              child: const Text('بحث', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -376,19 +505,19 @@ Future<void> _loadSavedLocation() async {
       final locations = await locationFromAddress(cityName);
       if (locations.isNotEmpty) {
         final location = locations.first;
-        
+
         // Save to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setDouble('last_latitude', location.latitude);
         await prefs.setDouble('last_longitude', location.longitude);
         await prefs.setString('manual_city', cityName);
-        
+
         // Get place name
         final placemarks = await placemarkFromCoordinates(
           location.latitude,
           location.longitude,
         );
-        
+
         if (placemarks.isNotEmpty) {
           _updateLocation(
             placemarks[0].country ?? cityName,
@@ -397,7 +526,7 @@ Future<void> _loadSavedLocation() async {
         } else {
           _updateLocation(cityName, '');
         }
-        
+
         // Refresh prayer times
         ref.read(prayerTimesProvider.notifier).fetchPrayerTimes();
       } else {
@@ -435,24 +564,42 @@ Future<void> _loadSavedLocation() async {
                         final enabled = snapshot.data ?? true;
                         return Icon(
                           enabled ? Icons.volume_up : Icons.volume_off,
-                          color: enabled ? const Color(0xffF0F8FF) : Colors.white38,
+                          color:
+                              enabled
+                                  ? const Color(0xffF0F8FF)
+                                  : Colors.white38,
                         );
                       },
                     ),
-                    if (isNext) CountdownTimer(onFinish: () => setState(() {})) else const SizedBox.shrink(),
+                    if (isNext)
+                      CountdownTimer(onFinish: () => setState(() {}))
+                    else
+                      const SizedBox.shrink(),
                     const SizedBox(width: 64),
                     Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(name, style: const TextStyle(
-                            fontFamily: 'Cairo', color: Color(0xffF0F8FF), fontWeight: FontWeight.w500, fontSize: 16,
-                          )),
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontFamily: 'Cairo',
+                              color: Color(0xffF0F8FF),
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text(time, style: const TextStyle(
-                            fontFamily: 'Cairo', color: Color(0xffF0F8FF), fontWeight: FontWeight.w100, fontSize: 14,
-                          )),
+                          Text(
+                            time,
+                            style: const TextStyle(
+                              fontFamily: 'Cairo',
+                              color: Color(0xffF0F8FF),
+                              fontWeight: FontWeight.w100,
+                              fontSize: 14,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -474,7 +621,8 @@ Future<void> _loadSavedLocation() async {
   void _showSoundDialog(String prayerName) async {
     final prefs = await SharedPreferences.getInstance();
     bool isEnabled = prefs.getBool('adhan_enabled_$prayerName') ?? true;
-    String selectedSound = prefs.getString('adhan_sound_$prayerName') ?? 'adhan1';
+    String selectedSound =
+        prefs.getString('adhan_sound_$prayerName') ?? 'adhan1';
 
     // Available sounds - add more as you add mp3 files
     final sounds = [
@@ -485,74 +633,125 @@ Future<void> _loadSavedLocation() async {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 8, 42, 73),
-          title: Text(
-            'إعدادات $prayerName',
-            style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
-            textAlign: TextAlign.right,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Enable/Disable toggle
-              SwitchListTile(
-                title: const Text(
-                  'تفعيل الأذان',
-                  style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
-                  textAlign: TextAlign.right,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  backgroundColor: const Color(0xFF0E2031),
+                  title: Text(
+                    'اشعار $prayerName',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 24,
+                      
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Enable/Disable toggle
+                        SwitchListTile(
+                          title: const Text(
+                            'تفعيل الأذان',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Cairo',
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                          value: isEnabled,
+                          activeColor: const Color(0xFF0768C5),
+                          onChanged: (value) {
+                            setDialogState(() => isEnabled = value);
+                          },
+                        ),
+                        const Divider(color: Colors.white24),
+                        // Sound selection
+                        const Text(
+                          'اختر نغمة الأذان',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontFamily: 'Cairo',
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ...sounds.map(
+                          (sound) => RadioListTile<String>(
+                            title: Text(
+                              sound['name']!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Cairo',
+                                fontSize: 16,
+                              ),
+                            ),
+                            value: sound['id']!,
+                            groupValue: selectedSound,
+                            activeColor: const Color(0xFF0768C5),
+                            onChanged:
+                                isEnabled
+                                    ? (value) {
+                                      setDialogState(
+                                        () => selectedSound = value!,
+                                      );
+                                    }
+                                    : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'إلغاء',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontFamily: 'Cairo',
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        await prefs.setBool(
+                          'adhan_enabled_$prayerName',
+                          isEnabled,
+                        );
+                        await prefs.setString(
+                          'adhan_sound_$prayerName',
+                          selectedSound,
+                        );
+                        Navigator.pop(context);
+                        setState(() {}); // Refresh UI to show icon change
+
+                        // 🔄 Reschedule notifications with new settings
+                        final prayerTimesAsync = ref.read(prayerTimesProvider);
+                        if (prayerTimesAsync.hasValue) {
+                          await PrayerAlarmScheduler.scheduleAllPrayersWithData(
+                            prayerTimesAsync.value!,
+                          );
+                        }
+                      },
+                      child: const Text(
+                        'حفظ',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Cairo',
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                value: isEnabled,
-                activeColor: const Color.fromARGB(255, 31, 125, 233),
-                onChanged: (value) {
-                  setDialogState(() => isEnabled = value);
-                },
-              ),
-              const Divider(color: Colors.white24),
-              // Sound selection
-              const Text(
-                'اختر نغمة الأذان',
-                style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              ...sounds.map((sound) => RadioListTile<String>(
-                title: Text(
-                  sound['name']!,
-                  style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
-                ),
-                value: sound['id']!,
-                groupValue: selectedSound,
-                activeColor: Color.fromARGB(255, 31, 125, 233),
-                onChanged: isEnabled ? (value) {
-                  setDialogState(() => selectedSound = value!);
-                } : null,
-              )),
-            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
-            ),
-            TextButton(
-              onPressed: () async {
-                await prefs.setBool('adhan_enabled_$prayerName', isEnabled);
-                await prefs.setString('adhan_sound_$prayerName', selectedSound);
-                Navigator.pop(context);
-                setState(() {}); // Refresh UI to show icon change
-                
-                // 🔄 Reschedule notifications with new settings
-                final prayerTimesAsync = ref.read(prayerTimesProvider);
-                if (prayerTimesAsync.hasValue) {
-                  await PrayerAlarmScheduler.scheduleAllPrayersWithData(prayerTimesAsync.value!);
-                }
-              },
-              child: const Text('حفظ', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
