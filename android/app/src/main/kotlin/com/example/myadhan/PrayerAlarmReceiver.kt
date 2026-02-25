@@ -8,7 +8,8 @@ import android.util.Log
 
 /**
  * BroadcastReceiver that is triggered by AlarmManager when prayer time arrives.
- * This works even when the app is killed since it's registered in AndroidManifest.xml
+ * This works even when the app is killed since it's registered in AndroidManifest.xml.
+ * It reads prayer info + sound preference from SharedPreferences and starts AdhanAlarmService.
  */
 class PrayerAlarmReceiver : BroadcastReceiver() {
     
@@ -29,12 +30,23 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         val prayerName = prefs.getString("flutter.prayer_${prayerId}_name", "الصلاة") ?: "الصلاة"
         val prayerTime = prefs.getString("flutter.prayer_${prayerId}_time", "") ?: ""
         
-        Log.d(TAG, "Prayer Name: $prayerName, Time: $prayerTime")
+        // Get the user's selected sound for this prayer
+        val soundName = prefs.getString("flutter.adhan_sound_$prayerName", "adhan1") ?: "adhan1"
         
-        // Start the AdhanAlarmService which will show notification + launch AdhanActivity
+        // Check if adhan is enabled for this prayer
+        val isEnabled = prefs.getBoolean("flutter.adhan_enabled_$prayerName", true)
+        if (!isEnabled) {
+            Log.d(TAG, "Adhan disabled for $prayerName, skipping")
+            return
+        }
+        
+        Log.d(TAG, "Prayer: $prayerName, Time: $prayerTime, Sound: $soundName")
+        
+        // Start the AdhanAlarmService which plays audio + shows notification
         val serviceIntent = Intent(context, AdhanAlarmService::class.java).apply {
             putExtra("prayerName", prayerName)
             putExtra("prayerTime", prayerTime)
+            putExtra("soundName", soundName)
         }
         
         try {

@@ -64,7 +64,6 @@ class _MyAppState extends ConsumerState<MyApp> {
     const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     
-    
     _notificationsPlugin.initialize(settings);
   }
 

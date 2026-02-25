@@ -4,119 +4,165 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioAttributes
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 
 class AdhanAlarmService : Service() {
-    
+
     companion object {
-        private const val CHANNEL_ID = "adhan_channel"
-        private const val NOTIFICATION_ID = 1
+        private const val TAG = "AdhanAlarmService"
+        private const val CHANNEL_ID = "adhan_playback_channel"
+        private const val NOTIFICATION_ID = 1001
+        const val ACTION_STOP_ADHAN = "com.example.myadhan.STOP_ADHAN"
+    }
+
+    // Receiver for the "Stop" button in the notification
+    private val stopReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            Log.d(TAG, "Stop action received")
+            stopAdhanAndService()
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        // Register stop receiver
+        val filter = IntentFilter(ACTION_STOP_ADHAN)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(stopReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(stopReceiver, filter)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val prayerName = intent?.getStringExtra("prayerName") ?: "الصلاة"
         val prayerTime = intent?.getStringExtra("prayerTime") ?: "حان وقت الصلاة"
-        
-        // Prepare the intent for the full-screen activity
-        val adhanIntent = Intent(this, AdhanActivity::class.java).apply {
-            putExtra("prayerName", prayerName)
-            putExtra("prayerTime", prayerTime)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        }
-        
-        val pendingIntent = PendingIntent.getActivity(
-            this, 
-            0, 
-            adhanIntent, 
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val soundName = intent?.getStringExtra("soundName") ?: "adhan1"
 
-        // Build notification with fullScreenIntent
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("حان وقت صلاة $prayerName")
-            .setContentText("الوقت: $prayerTime")
-            .setSmallIcon(R.mipmap.launcher_icon)
-            .setPriority(NotificationCompat.PRIORITY_MAX) // MAX for alarms
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setAutoCancel(true)
-            .setOngoing(false)
-            .setFullScreenIntent(pendingIntent, true) // Critical for alarm behavior
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .build()
-        
-        // Start foreground immediately
-        startForeground(NOTIFICATION_ID, notification)
-        
-        // Try to start activity directly as well (works on older Android or if permissible)
+        Log.d(TAG, "Starting Adhan: $prayerName at $prayerTime, sound=$soundName")
+
+        // Build notification with stop action FIRST (required before startForeground)
+        val notification = buildNotification(prayerName, prayerTime)
         try {
-            startActivity(adhanIntent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
         } catch (e: Exception) {
-            // On Android 10+, this might fail if app is in background, 
-            // but setFullScreenIntent will handle it.
-            e.printStackTrace()
+            Log.e(TAG, "Failed to start foreground: ${e.message}")
+            // Still try to play audio even if foreground fails
         }
-        
-        // Stop the service after a delay to ensure notification logic runs? 
-        // Actually, if we stopSelf importunately, the notification might vanish if it's bound to the service.
-        // But since we want the Activity to take over, it's fine.
-        // However, for Heads-Up notification (screen on), the service needs to keep running until user dims it?
-        // Let's keep it running for a moment or let the Activity handle stopping it?
-        // The Activity doesn't stop the service.
-        // Let's stopSelf() immediately as we handed off to the Activity/Notification.
-        stopForeground(STOP_FOREGROUND_DETACH) // Keep notification
-        stopSelf()
-        
+
+        // Launch the full-screen Adhan Activity
+        launchAdhanActivity(prayerName, prayerTime)
+
+        // Play Adhan on ALARM stream with audio focus
+        val resId = AdhanPlayer.getSoundResId(this, soundName)
+        AdhanPlayer.play(this, resId) {
+            // Called when playback completes
+            Log.d(TAG, "Adhan completed, stopping service")
+            stopAdhanAndService()
+        }
+
         return START_NOT_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
+    override fun onDestroy() {
+        Log.d(TAG, "Service destroyed")
+        AdhanPlayer.stop()
+        try {
+            unregisterReceiver(stopReceiver)
+        } catch (e: Exception) {
+            // Already unregistered
+        }
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun stopAdhanAndService() {
+        AdhanPlayer.stop()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    private fun launchAdhanActivity(prayerName: String, prayerTime: String) {
+        try {
+            val adhanIntent = Intent(this, AdhanActivity::class.java).apply {
+                putExtra("prayerName", prayerName)
+                putExtra("prayerTime", prayerTime)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            }
+            startActivity(adhanIntent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not launch AdhanActivity: ${e.message}")
+        }
+    }
+
+    private fun buildNotification(prayerName: String, prayerTime: String): android.app.Notification {
+        // Intent for tapping the notification → open app
+        val tapIntent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val tapPending = PendingIntent.getActivity(
+            this, 0, tapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Intent for "Stop" action button
+        val stopIntent = Intent(ACTION_STOP_ADHAN).apply {
+            setPackage(packageName)
+        }
+        val stopPending = PendingIntent.getBroadcast(
+            this, 0, stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("حان وقت صلاة $prayerName")
+            .setContentText("الوقت: $prayerTime")
+            .setSmallIcon(R.mipmap.launcher_icon)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(true) // Can't be swiped while Adhan is playing
+            .setContentIntent(tapPending)
+            .addAction(R.mipmap.launcher_icon, "إيقاف الأذان", stopPending)
+            .setSound(null) // No notification sound — audio via MediaPlayer
+            .build()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Adhan Notifications",
+                "Adhan Playback",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notifications for prayer times"
+                description = "Shows when Adhan is playing"
+                setSound(null, null) // Silent channel — audio via MediaPlayer on ALARM stream
                 enableVibration(true)
                 enableLights(true)
-                // IMPORTANCE_HIGH or MAX is needed for heads-up
-                importance = NotificationManager.IMPORTANCE_HIGH
-                setSound(null, null) // If we play sound via MediaPlayer in Activity?
-                // Or let notification play default sound? 
-                // Using setSound(null, null) if we want custom sound from Activity
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
-            
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+
+            val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            mgr.createNotificationChannel(channel)
         }
-    }
-
-    private fun showNotification(prayerName: String, prayerTime: String) {
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("حان وقت الصلاة")
-            .setContentText("$prayerName - $prayerTime")
-            .setSmallIcon(R.mipmap.launcher_icon)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .setOngoing(false)
-            .build()
-
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 }

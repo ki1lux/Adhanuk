@@ -65,24 +65,36 @@ class PrayerAlarmScheduler {
         scheduledTime = scheduledTime.add(const Duration(days: 1));
       }
 
-      // Store prayer info
+      // Store prayer info (native side reads these with 'flutter.' prefix)
       await prefs.setString('prayer_${id}_name', name);
       await prefs.setString('prayer_${id}_time', timeStr);
+      await prefs.setString('adhan_sound_$name', soundName);
 
-      // Schedule notification with selected sound
-      await _scheduleLocalNotification(id, name, timeStr, scheduledTime, soundName);
-      print('✅ Notification scheduled for $name at $scheduledTime (sound: $soundName)');
+      // Schedule NATIVE alarm via AlarmManager → PrayerAlarmReceiver → AdhanAlarmService
+      // This handles audio playback on ALARM stream (not interrupted by notifications)
+      try {
+        await _channel.invokeMethod('scheduleNativePrayerAlarm', {
+          'prayerId': id,
+          'triggerAtMillis': scheduledTime.millisecondsSinceEpoch,
+        });
+        print('✅ Native alarm scheduled for $name at $scheduledTime (sound: $soundName)');
+      } catch (e) {
+        print('⚠️ Native alarm failed for $name: $e — falling back to notification sound');
+        // Fallback: schedule Flutter notification WITH sound
+        await _scheduleLocalNotification(id, name, timeStr, scheduledTime, soundName, withSound: true);
+      }
     }
   }
 
-  /// Schedule a single local notification with custom sound
+  /// Schedule a single local notification
   static Future<void> _scheduleLocalNotification(
     int id,
     String name,
     String timeStr,
     DateTime scheduledTime,
-    String soundName,
-  ) async {
+    String soundName, {
+    bool withSound = false, // true = fallback when native alarm fails
+  }) async {
     final tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
 
     await _notificationsPlugin.zonedSchedule(
@@ -92,13 +104,15 @@ class PrayerAlarmScheduler {
       tzScheduledTime,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          'prayer_notification_channel',
-          'Prayer Notifications',
-          channelDescription: 'Notifications for Islamic prayer times',
+          withSound ? 'adhan_sound_channel' : 'prayer_visual_channel',
+          withSound ? 'Adhan Sound' : 'Prayer Reminders',
+          channelDescription: withSound
+              ? 'Adhan sound fallback'
+              : 'Visual prayer time reminders',
           importance: Importance.max,
           priority: Priority.high,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound(soundName),
+          playSound: withSound,
+          sound: withSound ? RawResourceAndroidNotificationSound(soundName) : null,
           actions: [const AndroidNotificationAction(
               'stop_audio_id', 
               'إلغاء',    
@@ -148,8 +162,13 @@ class PrayerAlarmScheduler {
     }
   }
 
-  /// Cancel all scheduled alarms
+  /// Cancel all scheduled alarms (both Flutter notifications and native alarms)
   static Future<void> cancelAll() async {
     await _notificationsPlugin.cancelAll();
+    try {
+      await _channel.invokeMethod('cancelAllNativeAlarms');
+    } catch (e) {
+      print('Error cancelling native alarms: $e');
+    }
   }
 }

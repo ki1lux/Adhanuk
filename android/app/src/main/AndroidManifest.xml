@@ -16,7 +16,7 @@
 
     <!-- Foreground Service Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <!-- Feature -->
     <uses-feature android:name="android.hardware.sensor.compass" android:required="true"/>
@@ -99,7 +99,7 @@
         <service
             android:name=".AdhanAlarmService"
             android:exported="false"
-            android:foregroundServiceType="specialUse|location|dataSync" />
+            android:foregroundServiceType="mediaPlayback" />
 
         <!-- Notification Channel Metadata -->
         <meta-data
