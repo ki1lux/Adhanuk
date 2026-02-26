@@ -1,14 +1,13 @@
 import 'dart:convert';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:workmanager/workmanager.dart';
 
-/// Daily background updater for prayer times
-/// Uses WorkManager to run a task every day at midnight
+/// Daily background updater for prayer times.
+/// Uses WorkManager to run a task every day at midnight.
+/// Fetches new prayer times from Aladhan API, saves trigger timestamps
+/// to SharedPreferences, and triggers native alarm rescheduling.
 class DailyPrayerUpdater {
   static const String _taskName = 'daily_prayer_update';
   static const String _taskTag = 'prayer_notifications_daily';
@@ -26,7 +25,7 @@ class DailyPrayerUpdater {
       frequency: const Duration(hours: 24),
       initialDelay: _calculateDelayUntilMidnight(),
       constraints: Constraints(
-        networkType: NetworkType.connected, // Requires internet
+        networkType: NetworkType.connected,
         requiresBatteryNotLow: false,
         requiresCharging: false,
         requiresDeviceIdle: false,
@@ -53,10 +52,6 @@ void callbackDispatcher() {
     print('🔄 Background task started: $taskName');
     
     try {
-      // Initialize timezone
-      tz_data.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('Africa/Algiers'));
-      
       // Get stored location
       final prefs = await SharedPreferences.getInstance();
       final lat = prefs.getDouble('last_latitude');
@@ -74,10 +69,18 @@ void callbackDispatcher() {
         return true;
       }
       
-      // Schedule notifications
-      await _scheduleNotifications(prayerTimes);
+      // Save prayer times + trigger timestamps + Hijri date to SharedPreferences
+      // The native BootReceiver/AlarmSchedulerHelper reads these to schedule alarms
+      await _savePrayerTimesToPrefs(prayerTimes['prayers'] as Map<String, DateTime>, prefs);
       
-      print('✅ Prayer times updated successfully');
+      // Update cached Hijri date for the UI
+      final hijriDate = prayerTimes['hijri'] as String?;
+      if (hijriDate != null && hijriDate.isNotEmpty) {
+        await prefs.setString('cached_hijri_date', hijriDate);
+        print('📅 Hijri date updated: $hijriDate');
+      }
+      
+      print('✅ Prayer times updated and saved for native rescheduling');
       return true;
     } catch (e) {
       print('❌ Background task error: $e');
@@ -87,7 +90,7 @@ void callbackDispatcher() {
 }
 
 /// Fetch prayer times from Aladhan API
-Future<Map<String, DateTime>?> _fetchPrayerTimesFromApi(double lat, double lng) async {
+Future<Map<String, dynamic>?> _fetchPrayerTimesFromApi(double lat, double lng) async {
   try {
     final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final uri = Uri.parse(
@@ -101,6 +104,10 @@ Future<Map<String, DateTime>?> _fetchPrayerTimesFromApi(double lat, double lng) 
     final json = jsonDecode(response.body);
     final timings = json['data']['timings'] as Map<String, dynamic>;
     
+    // Extract Hijri date
+    final hijriData = json['data']['date']['hijri'];
+    final hijriStr = '${hijriData['day']} ${hijriData['month']['ar']} ${hijriData['year']}';
+    
     final now = DateTime.now();
     
     DateTime parseTime(String timeStr) {
@@ -110,11 +117,14 @@ Future<Map<String, DateTime>?> _fetchPrayerTimesFromApi(double lat, double lng) 
     }
     
     return {
-      'Fajr': parseTime(timings['Fajr']),
-      'Dhuhr': parseTime(timings['Dhuhr']),
-      'Asr': parseTime(timings['Asr']),
-      'Maghrib': parseTime(timings['Maghrib']),
-      'Isha': parseTime(timings['Isha']),
+      'hijri': hijriStr,
+      'prayers': {
+        'Fajr': parseTime(timings['Fajr']),
+        'Dhuhr': parseTime(timings['Dhuhr']),
+        'Asr': parseTime(timings['Asr']),
+        'Maghrib': parseTime(timings['Maghrib']),
+        'Isha': parseTime(timings['Isha']),
+      },
     };
   } catch (e) {
     print('API error: $e');
@@ -122,30 +132,32 @@ Future<Map<String, DateTime>?> _fetchPrayerTimesFromApi(double lat, double lng) 
   }
 }
 
-/// Schedule notifications for all prayers
-Future<void> _scheduleNotifications(Map<String, DateTime> prayerTimes) async {
-  final plugin = FlutterLocalNotificationsPlugin();
-  final prefs = await SharedPreferences.getInstance();
-  
-  // Initialize plugin
-  const androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
-  const settings = InitializationSettings(android: androidSettings);
-  await plugin.initialize(settings);
-  
-  // Cancel old notifications
-  await plugin.cancelAll();
-  
+/// Save prayer times and trigger timestamps to SharedPreferences.
+/// The native AlarmSchedulerHelper.rescheduleAllFromPrefs() reads these keys
+/// to schedule AlarmManager.setAlarmClock() alarms directly from native code.
+///
+/// Keys saved (native reads with 'flutter.' prefix):
+/// - prayer_{id}_name → Arabic prayer name
+/// - prayer_{id}_time → display time "HH:mm"
+/// - prayer_{id}_trigger_millis → epoch millis for next alarm trigger
+Future<void> _savePrayerTimesToPrefs(
+  Map<String, DateTime> prayerTimes,
+  SharedPreferences prefs,
+) async {
   final now = DateTime.now();
-  final prayers = [
-    {'id': 101, 'name': 'الفجر', 'time': prayerTimes['Fajr']!},
-    {'id': 102, 'name': 'الظهر', 'time': prayerTimes['Dhuhr']!},
-    {'id': 103, 'name': 'العصر', 'time': prayerTimes['Asr']!},
-    {'id': 104, 'name': 'المغرب', 'time': prayerTimes['Maghrib']!},
-    {'id': 105, 'name': 'العشاء', 'time': prayerTimes['Isha']!},
-  ];
   
+  final prayers = [
+    {'id': 1, 'name': 'الفجر', 'apiKey': 'Fajr'},
+    {'id': 2, 'name': 'الظهر', 'apiKey': 'Dhuhr'},
+    {'id': 3, 'name': 'العصر', 'apiKey': 'Asr'},
+    {'id': 4, 'name': 'المغرب', 'apiKey': 'Maghrib'},
+    {'id': 5, 'name': 'العشاء', 'apiKey': 'Isha'},
+  ];
+
   for (final prayer in prayers) {
+    final id = prayer['id'] as int;
     final name = prayer['name'] as String;
+    final apiKey = prayer['apiKey'] as String;
     
     // Check if adhan is enabled for this prayer
     final isEnabled = prefs.getBool('adhan_enabled_$name') ?? true;
@@ -153,40 +165,29 @@ Future<void> _scheduleNotifications(Map<String, DateTime> prayerTimes) async {
       print('⏭️ Skipping $name - adhan disabled');
       continue;
     }
-    
-    // Get selected sound for this prayer
-    final soundName = prefs.getString('adhan_sound_$name') ?? 'adhan1';
-    
-    var scheduledTime = prayer['time'] as DateTime;
-    
-    // If time passed, schedule for tomorrow
+
+    var scheduledTime = prayerTimes[apiKey]!;
+    final timeStr = DateFormat('HH:mm').format(scheduledTime);
+
+    // If prayer time has passed today, schedule for tomorrow
     if (scheduledTime.isBefore(now)) {
       scheduledTime = scheduledTime.add(const Duration(days: 1));
     }
-    
-    final tzTime = tz.TZDateTime.from(scheduledTime, tz.local);
-    final timeStr = DateFormat('HH:mm').format(scheduledTime);
-    
-    await plugin.zonedSchedule(
-      prayer['id'] as int,
-      'حان وقت صلاة $name',
-      'الوقت: $timeStr',
-      tzTime,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'prayer_notification_channel',
-          'Prayer Notifications',
-          channelDescription: 'Notifications for Islamic prayer times',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound(soundName),
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
-    
-    print('📿 Scheduled $name at $tzTime (sound: $soundName)');
+
+    // Save prayer info + trigger timestamp
+    await prefs.setString('prayer_${id}_name', name);
+    await prefs.setString('prayer_${id}_time', timeStr);
+    await prefs.setInt('prayer_${id}_trigger_millis', scheduledTime.millisecondsSinceEpoch);
+
+    print('💾 Saved $name: $timeStr → trigger at ${scheduledTime.millisecondsSinceEpoch}');
   }
+
+  // Mark last update time
+  await prefs.setString('last_prayer_update', now.toIso8601String());
+  
+  // Signal native side to reschedule by setting a flag
+  // The native BootReceiver/AlarmSchedulerHelper checks this
+  await prefs.setBool('needs_alarm_reschedule', true);
+  
+  print('✅ All prayer times saved to SharedPreferences for native scheduling');
 }

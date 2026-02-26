@@ -75,14 +75,20 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
       );
       print('✅ Got prayer times from API');
 
-      state = AsyncValue.data(PrayerTimeModel(
+      final model = PrayerTimeModel(
         fajer: _parseTimeString(response.fajr),
         dhuhr: _parseTimeString(response.dhuhr),
         asr: _parseTimeString(response.asr),
         maghrib: _parseTimeString(response.maghrib),
         isha: _parseTimeString(response.isha),
         dateOnHijri: response.dateOnHijri.toString(),
-      ));
+      );
+
+      // Cache Hijri date to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_hijri_date', model.dateOnHijri);
+
+      state = AsyncValue.data(model);
     } catch (e, st) {
       print('❌ Error fetching prayer times: $e');
       state = AsyncValue.error(e, st);

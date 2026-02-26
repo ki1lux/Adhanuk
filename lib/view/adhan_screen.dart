@@ -4,26 +4,44 @@ import 'package:flutter_svg/svg.dart';
 import 'package:myadhan/providers/prayer_times_provider.dart';
 import 'package:myadhan/view/AnalogClockView.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdhanScreen extends ConsumerStatefulWidget {
-
   const AdhanScreen({super.key});
 
   @override
   ConsumerState<AdhanScreen> createState() => _adhanScreen();
 }
 
-class _adhanScreen extends ConsumerState<AdhanScreen>{
+class _adhanScreen extends ConsumerState<AdhanScreen> {
+  String _cachedHijri = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedHijri();
+  }
+
+  Future<void> _loadCachedHijri() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString('cached_hijri_date') ?? '';
+    print("❤️ date hejri :$cached");
+    if (cached.isNotEmpty && mounted) {
+      setState(() => _cachedHijri = cached);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final prayerTimesAsync = ref.watch(prayerTimesProvider);
 
-  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-    statusBarColor: Colors.white,
-    statusBarIconBrightness: Brightness.dark,
-    statusBarBrightness: Brightness.light,
-  ));
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
 
     return Scaffold(
       body: Stack(
@@ -48,38 +66,48 @@ class _adhanScreen extends ConsumerState<AdhanScreen>{
             ),
           ),
           Positioned(child: Analogclockview()),
-          
+
           Positioned(
             top: 550,
             left: 0,
             right: 0,
             child: prayerTimesAsync.when(
-              
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (data) => Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  // decoration: BoxDecoration(
-                  //   color: const Color.fromARGB(255, 36, 100, 239).withValues(alpha: 0.08),
-                  //   borderRadius: BorderRadius.circular(20),
-                  // ),
-                  
-                  child: Text(
-                    data.dateOnHijri,
-                    textDirection: TextDirection.rtl,
-                    style: const TextStyle(
-                      color: Color.fromARGB(255, 255, 255, 255),
-                      fontFamily: 'Cairo',
-                      fontSize: 22,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
+              loading: () => _buildHijriText(_cachedHijri),
+              error: (_, __) => _buildHijriText(_cachedHijri),
+              data: (data) {
+                // Update cache when fresh data arrives
+                print("🩵 new date : $data");
+                if (data.dateOnHijri.isNotEmpty &&
+                    data.dateOnHijri != _cachedHijri) {
+                  _cachedHijri = data.dateOnHijri;
+                  SharedPreferences.getInstance().then((prefs) {
+                    prefs.setString('cached_hijri_date', data.dateOnHijri);
+                  });
+                }
+                return _buildHijriText(data.dateOnHijri);
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHijriText(String text) {
+    if (text.isEmpty) return const SizedBox.shrink();
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Text(
+          text,
+          textDirection: TextDirection.rtl,
+          style: const TextStyle(
+            color: Color.fromARGB(255, 255, 255, 255),
+            fontFamily: 'Cairo',
+            fontSize: 22,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
     );
   }

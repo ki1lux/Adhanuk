@@ -60,11 +60,11 @@ class MainActivity : FlutterActivity(){
                     val prayerId = call.argument<Int>("prayerId") ?: 0
                     val triggerAtMillis = call.argument<Long>("triggerAtMillis") ?: 0L
                     
-                    scheduleNativeAlarm(prayerId, triggerAtMillis)
+                    AlarmSchedulerHelper.scheduleAlarm(this, prayerId, triggerAtMillis)
                     result.success("Alarm scheduled for prayer $prayerId")
                 }
                 "cancelAllNativeAlarms" -> {
-                    cancelAllAlarms()
+                    AlarmSchedulerHelper.cancelAll(this)
                     result.success("All alarms cancelled")
                 }
                 "requestExactAlarmPermission" -> {
@@ -92,17 +92,15 @@ class MainActivity : FlutterActivity(){
                 }
                 "testNativeAlarm" -> {
                     val triggerTime = System.currentTimeMillis() + 10000 // 10 seconds from now
-                    scheduleNativeAlarm(999, triggerTime) // ID 999 for test
+                    AlarmSchedulerHelper.scheduleAlarm(this, 999, triggerTime)
                     result.success("Test alarm scheduled for 10 seconds from now")
                 }
                 "openBatterySettings" -> {
                     try {
-                        // Try to open battery optimization settings directly
                         val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
                         startActivity(intent)
                         result.success(true)
                     } catch (e: Exception) {
-                        // Fallback: open app details settings
                         try {
                             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                             intent.data = android.net.Uri.parse("package:$packageName")
@@ -113,62 +111,15 @@ class MainActivity : FlutterActivity(){
                         }
                     }
                 }
+                "rescheduleFromPrefs" -> {
+                    AlarmSchedulerHelper.rescheduleAllFromPrefs(this)
+                    result.success("Alarms rescheduled from SharedPreferences")
+                }
                 else -> {
                     result.notImplemented()
                 }
             }
         }
-    }
-    
-    private fun scheduleNativeAlarm(prayerId: Int, triggerAtMillis: Long) {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        
-        Log.d(TAG, "Scheduling alarm: prayerId=$prayerId, triggerAt=$triggerAtMillis")
-        Log.d(TAG, "Current time: ${System.currentTimeMillis()}")
-        Log.d(TAG, "Alarm in ${(triggerAtMillis - System.currentTimeMillis()) / 1000} seconds")
-        
-        val intent = Intent(this, PrayerAlarmReceiver::class.java).apply {
-            putExtra(PrayerAlarmReceiver.EXTRA_PRAYER_ID, prayerId)
-        }
-        
-        val pendingIntent = PendingIntent.getBroadcast(
-            this,
-            prayerId, // Use prayer ID as request code for uniqueness
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        
-        // Use setAlarmClock for highest priority - shows in system UI and wakes device
-        try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent)
-                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
-                Log.d(TAG, "setAlarmClock scheduled successfully")
-            } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-                Log.d(TAG, "setExact scheduled successfully")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error scheduling alarm: ${e.message}")
-            e.printStackTrace()
-        }
-    }
-    
-    private fun cancelAllAlarms() {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        
-        for (prayerId in 1..5) {
-            val intent = Intent(this, PrayerAlarmReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
-                this,
-                prayerId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            alarmManager.cancel(pendingIntent)
-        }
-        
-        Log.d(TAG, "All native prayer alarms cancelled")
     }
     
     companion object {

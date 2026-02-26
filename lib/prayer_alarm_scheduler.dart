@@ -65,10 +65,11 @@ class PrayerAlarmScheduler {
         scheduledTime = scheduledTime.add(const Duration(days: 1));
       }
 
-      // Store prayer info (native side reads these with 'flutter.' prefix)
+      // Store prayer info + trigger timestamp (native side reads these with 'flutter.' prefix)
       await prefs.setString('prayer_${id}_name', name);
       await prefs.setString('prayer_${id}_time', timeStr);
       await prefs.setString('adhan_sound_$name', soundName);
+      await prefs.setInt('prayer_${id}_trigger_millis', scheduledTime.millisecondsSinceEpoch);
 
       // Schedule NATIVE alarm via AlarmManager → PrayerAlarmReceiver → AdhanAlarmService
       // This handles audio playback on ALARM stream (not interrupted by notifications)
