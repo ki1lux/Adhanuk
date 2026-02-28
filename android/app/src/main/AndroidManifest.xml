@@ -17,6 +17,7 @@
     <!-- Foreground Service Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Feature -->
     <uses-feature android:name="android.hardware.sensor.compass" android:required="true"/>
@@ -94,11 +95,20 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- Foreground Service -->
+        <!-- Foreground Services -->
         <service
             android:name=".AdhanAlarmService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <service
+            android:name=".PrayerCountdownService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="prayer_countdown_timer" />
+        </service>
 
         <!-- Notification Channel Metadata -->
         <meta-data

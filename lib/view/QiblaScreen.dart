@@ -170,6 +170,36 @@ class _QiblaScreenState extends State<QiblaScreen> {
               },
             ),
           ),
+          // Reset Qibla button
+          Positioned(
+            bottom: 96,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _loading = true;
+                  });
+                  _checkPermission();
+                },
+                icon: const Icon(Icons.compass_calibration, size: 20),
+                label: const Text(
+                  'إعادة ضبط القبلة',
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 14),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.15),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

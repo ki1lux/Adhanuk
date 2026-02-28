@@ -85,6 +85,14 @@ class PrayerAlarmScheduler {
         await _scheduleLocalNotification(id, name, timeStr, scheduledTime, soundName, withSound: true);
       }
     }
+
+    // Start the persistent countdown notification
+    try {
+      await _channel.invokeMethod('startCountdownService');
+      print('⏱️ Countdown notification service started');
+    } catch (e) {
+      print('⚠️ Failed to start countdown service: $e');
+    }
   }
 
   /// Schedule a single local notification
