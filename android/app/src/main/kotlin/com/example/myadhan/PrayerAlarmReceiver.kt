@@ -58,6 +58,8 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                 context.startService(serviceIntent)
             }
             Log.d(TAG, "Service started successfully")
+            // Also ensure countdown service is running
+            PrayerCountdownService.startIfNeeded(context)
         } catch (e: Exception) {
             Log.e(TAG, "Error starting service: ${e.message}")
             e.printStackTrace()

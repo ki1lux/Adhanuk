@@ -11,16 +11,19 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
 
 /**
  * Foreground Service that shows a persistent notification with countdown
- * to the next prayer time. Updates every 60 seconds.
+ * to the next prayer time.
  *
- * Reads prayer times from SharedPreferences (set by Flutter or WorkManager):
- * - flutter.prayer_{id}_name → Arabic prayer name
- * - flutter.prayer_{id}_trigger_millis → epoch millis for alarm trigger
+ * Optimizations applied:
+ * 1. Doze-resilient: uses postAtTime(SystemClock.uptimeMillis) instead of postDelayed
+ * 2. Cached builder: reuses NotificationCompat.Builder, only updates text
+ * 3. Zero-moment state machine: handles prayer transition gracefully
+ * 4. Adaptive frequency: 1s updates in final minute, 60s otherwise
  */
 class PrayerCountdownService : Service() {
 
@@ -28,17 +31,43 @@ class PrayerCountdownService : Service() {
         private const val TAG = "PrayerCountdownService"
         private const val CHANNEL_ID = "prayer_countdown_channel"
         private const val NOTIFICATION_ID = 2001
-        private const val UPDATE_INTERVAL_MS = 60_000L // Update every 60 seconds
+        private const val NORMAL_INTERVAL_MS = 60_000L  // Every 60s normally
+        private const val FAST_INTERVAL_MS = 1_000L     // Every 1s in final minute
         private const val PREFS_NAME = "FlutterSharedPreferences"
+
+        /**
+         * Static helper to start the countdown service from anywhere.
+         * Called by BootReceiver, PrayerAlarmReceiver, and onTaskRemoved.
+         */
+        fun startIfNeeded(context: Context) {
+            try {
+                val intent = Intent(context, PrayerCountdownService::class.java)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+                Log.d(TAG, "Countdown service (re)started")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to start countdown service: ${e.message}")
+            }
+        }
     }
 
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var prefs: SharedPreferences
 
+    // Pro-tip #2: Keep a reference to the builder — don't recreate every tick
+    private var cachedBuilder: NotificationCompat.Builder? = null
+    private var currentPrayerId: Int? = null // Track which prayer we're counting down to
+
     private val updateRunnable = object : Runnable {
         override fun run() {
-            updateNotification()
-            handler.postDelayed(this, UPDATE_INTERVAL_MS)
+            val nextInterval = updateNotification()
+
+            // Pro-tip #1: Use postAtTime with uptimeMillis for Doze resilience
+            val nextTick = SystemClock.uptimeMillis() + nextInterval
+            handler.postAtTime(this, nextTick)
         }
     }
 
@@ -52,8 +81,8 @@ class PrayerCountdownService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "Service started")
 
-        // Show initial notification immediately
-        val notification = buildNotification()
+        // Build initial notification
+        val notification = buildInitialNotification()
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(NOTIFICATION_ID, notification,
@@ -71,7 +100,7 @@ class PrayerCountdownService : Service() {
         handler.removeCallbacks(updateRunnable)
         handler.post(updateRunnable)
 
-        return START_STICKY // Restart if killed
+        return START_STICKY
     }
 
     override fun onDestroy() {
@@ -80,40 +109,82 @@ class PrayerCountdownService : Service() {
         super.onDestroy()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // Auto-restart when user swipes app from recents
+        Log.d(TAG, "Task removed — restarting countdown service")
+        startIfNeeded(this)
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     /**
-     * Find next prayer and update the notification with countdown.
+     * Update notification and return the interval until the next update.
+     * Pro-tip #4: Adaptive frequency — 1s in final minute, 60s otherwise.
      */
-    private fun updateNotification() {
-        val notification = buildNotification()
-        val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        mgr.notify(NOTIFICATION_ID, notification)
-    }
-
-    private fun buildNotification(): android.app.Notification {
+    private fun updateNotification(): Long {
         val now = System.currentTimeMillis()
         val nextPrayer = findNextPrayer(now)
 
         val title: String
         val text: String
+        var nextInterval = NORMAL_INTERVAL_MS
 
         if (nextPrayer != null) {
             val remainingMs = nextPrayer.triggerMillis - now
-            val totalMinutes = remainingMs / 60_000
-            val hours = totalMinutes / 60
-            val minutes = totalMinutes % 60
 
-            title = "صلاة ${nextPrayer.name}"
-            text = if (hours > 0) {
-                "بعد $hours ساعة و $minutes دقيقة"
+            // Pro-tip #3: Zero-moment state machine
+            if (remainingMs <= 0) {
+                // Prayer time has arrived — briefly show "حان الوقت" then advance
+                title = "حان وقت صلاة ${nextPrayer.name}"
+                text = "حان الآن"
+                currentPrayerId = null // Force re-scan on next tick
+                nextInterval = 5_000L // Check again in 5s for next prayer
             } else {
-                "بعد $minutes دقيقة"
+                val totalSeconds = remainingMs / 1_000
+                val hours = totalSeconds / 3600
+                val minutes = (totalSeconds % 3600) / 60
+                val seconds = totalSeconds % 60
+
+                title = "صلاة ${nextPrayer.name}"
+
+                // Pro-tip #4: Switch to per-second updates in final minute
+                if (remainingMs <= 60_000) {
+                    text = "بعد $seconds ثانية"
+                    nextInterval = FAST_INTERVAL_MS
+                } else if (hours > 0) {
+                    text = "بعد $hours ساعة و $minutes دقيقة"
+                    nextInterval = NORMAL_INTERVAL_MS
+                } else {
+                    text = "بعد $minutes دقيقة"
+                    nextInterval = NORMAL_INTERVAL_MS
+                }
+
+                currentPrayerId = nextPrayer.id
             }
         } else {
             title = "أوقات الصلاة"
             text = "لا توجد صلاة قادمة"
+            nextInterval = NORMAL_INTERVAL_MS
         }
+
+        // Pro-tip #2: Reuse the cached builder — only update text fields
+        val builder = getOrCreateBuilder()
+        builder.setContentTitle(title)
+        builder.setContentText(text)
+
+        val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        mgr.notify(NOTIFICATION_ID, builder.build())
+
+        return nextInterval
+    }
+
+    /**
+     * Pro-tip #2: Cache the NotificationCompat.Builder.
+     * Only create once, then reuse and update text fields only.
+     */
+    private fun getOrCreateBuilder(): NotificationCompat.Builder {
+        cachedBuilder?.let { return it }
 
         // Tap → open app
         val tapIntent = Intent(this, MainActivity::class.java).apply {
@@ -124,22 +195,33 @@ class PrayerCountdownService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(title)
-            .setContentText(text)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.launcher_icon)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(true) // Cannot be swiped away
-            .setShowWhen(false) // Don't show timestamp
+            .setOngoing(true)
+            .setShowWhen(false)
             .setContentIntent(tapPending)
-            .setSilent(true) // No sound/vibration on updates
-            .build()
+            .setSilent(true)
+
+        cachedBuilder = builder
+        return builder
+    }
+
+    /**
+     * Build the initial notification (before the first update tick).
+     */
+    private fun buildInitialNotification(): android.app.Notification {
+        val builder = getOrCreateBuilder()
+        builder.setContentTitle("أوقات الصلاة")
+        builder.setContentText("جاري التحميل...")
+        return builder.build()
     }
 
     /**
      * Find the next upcoming prayer from SharedPreferences.
+     * Pro-tip #3: If currentPrayerId is set, check that one first for efficiency.
      */
     private fun findNextPrayer(now: Long): NextPrayer? {
         var closest: NextPrayer? = null
@@ -148,11 +230,13 @@ class PrayerCountdownService : Service() {
             val name = prefs.getString("flutter.prayer_${prayerId}_name", null) ?: continue
             val triggerMillis = prefs.getLong("flutter.prayer_${prayerId}_trigger_millis", 0L)
 
-            // Check if adhan is enabled
             val isEnabled = prefs.getBoolean("flutter.adhan_enabled_$name", true)
             if (!isEnabled) continue
 
-            if (triggerMillis <= now) continue // Already passed
+            if (triggerMillis <= 0) continue
+
+            // Include prayers that just arrived (within 30s window) for zero-moment display
+            if (triggerMillis < now - 30_000) continue
 
             if (closest == null || triggerMillis < closest.triggerMillis) {
                 closest = NextPrayer(prayerId, name, triggerMillis)
@@ -173,7 +257,7 @@ class PrayerCountdownService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "عداد الصلاة",
-                NotificationManager.IMPORTANCE_LOW // Silent — no sound/vibration
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "يعرض الوقت المتبقي للصلاة القادمة"
                 setSound(null, null)

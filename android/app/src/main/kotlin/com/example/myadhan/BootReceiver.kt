@@ -31,6 +31,8 @@ class BootReceiver : BroadcastReceiver() {
             "com.htc.intent.action.QUICKBOOT_POWERON" -> {
                 Log.d(TAG, "Received $action — rescheduling all prayer alarms")
                 AlarmSchedulerHelper.rescheduleAllFromPrefs(context)
+                // Also restart the countdown notification
+                PrayerCountdownService.startIfNeeded(context)
             }
             else -> {
                 Log.d(TAG, "Ignoring action: $action")

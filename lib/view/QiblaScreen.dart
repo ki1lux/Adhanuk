@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:myadhan/controller/QiblahController.dart';
 
@@ -13,6 +14,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   bool _hasPermission = false;
   bool _loading = true;
+  double _lastDirection = 0;
+  int _lastHapticTime = 0;
 
   @override
   void initState() {
@@ -132,6 +135,15 @@ class _QiblaScreenState extends State<QiblaScreen> {
                 final qiblahDirection = snapshot.data;
                 final double screenWidth = MediaQuery.of(context).size.width;
 
+                // Haptic feedback when compass rotates significantly
+                final double currentDir = (qiblahDirection.direction ?? 0).toDouble();
+                final int now = DateTime.now().millisecondsSinceEpoch;
+                if ((currentDir - _lastDirection).abs() > 3 && now - _lastHapticTime > 100) {
+                  HapticFeedback.lightImpact();
+                  _lastDirection = currentDir;
+                  _lastHapticTime = now;
+                }
+
                 return SizedBox(
                   height: screenWidth + 75,
                   child: Stack(
@@ -172,7 +184,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
           ),
           // Reset Qibla button
           Positioned(
-            bottom: 96,
+            bottom: 80,
             left: 0,
             right: 0,
             child: Center(

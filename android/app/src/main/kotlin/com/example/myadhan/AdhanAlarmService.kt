@@ -10,7 +10,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 
@@ -23,11 +25,31 @@ class AdhanAlarmService : Service() {
         const val ACTION_STOP_ADHAN = "com.example.myadhan.STOP_ADHAN"
     }
 
+    private var currentPrayerName = "الصلاة"
+    private var currentPrayerTime = ""
+    private val handler = Handler(Looper.getMainLooper())
+    private var isPlaying = false
+
     // Receiver for the "Stop" button in the notification
     private val stopReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             Log.d(TAG, "Stop action received")
             stopAdhanAndService()
+        }
+    }
+
+    // Re-posts notification if swiped away (Android 14+)
+    private val notificationWatchdog = object : Runnable {
+        override fun run() {
+            if (!isPlaying) return
+            val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val active = mgr.activeNotifications.any { it.id == NOTIFICATION_ID }
+            if (!active) {
+                Log.d(TAG, "Notification swiped — re-posting in drawer")
+                val notification = buildNotification(currentPrayerName, currentPrayerTime)
+                mgr.notify(NOTIFICATION_ID, notification)
+            }
+            handler.postDelayed(this, 2000)
         }
     }
 
@@ -47,6 +69,9 @@ class AdhanAlarmService : Service() {
         val prayerName = intent?.getStringExtra("prayerName") ?: "الصلاة"
         val prayerTime = intent?.getStringExtra("prayerTime") ?: "حان وقت الصلاة"
         val soundName = intent?.getStringExtra("soundName") ?: "adhan1"
+
+        currentPrayerName = prayerName
+        currentPrayerTime = prayerTime
 
         Log.d(TAG, "Starting Adhan: $prayerName at $prayerTime, sound=$soundName")
 
@@ -75,11 +100,17 @@ class AdhanAlarmService : Service() {
             stopAdhanAndService()
         }
 
+        // Start watchdog to re-post notification if swiped
+        isPlaying = true
+        handler.postDelayed(notificationWatchdog, 2000)
+
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
         Log.d(TAG, "Service destroyed")
+        isPlaying = false
+        handler.removeCallbacks(notificationWatchdog)
         AdhanPlayer.stop()
         try {
             unregisterReceiver(stopReceiver)
@@ -92,6 +123,8 @@ class AdhanAlarmService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun stopAdhanAndService() {
+        isPlaying = false
+        handler.removeCallbacks(notificationWatchdog)
         AdhanPlayer.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
