@@ -35,16 +35,14 @@ class _adhanScreen extends ConsumerState<AdhanScreen> {
   Widget build(BuildContext context) {
     final prayerTimesAsync = ref.watch(prayerTimesProvider);
 
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,  // Black icons on Android
+        statusBarBrightness: Brightness.light,      // Black icons on iOS
       ),
-    );
-
-    return Scaffold(
-      body: Stack(
+      child: Scaffold(
+        body: Stack(
         children: [
           Container(color: Color(0xff0A2239)),
           SvgPicture.asset(
@@ -89,6 +87,7 @@ class _adhanScreen extends ConsumerState<AdhanScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

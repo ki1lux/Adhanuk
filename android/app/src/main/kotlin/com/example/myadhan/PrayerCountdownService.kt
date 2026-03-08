@@ -126,44 +126,60 @@ class PrayerCountdownService : Service() {
         val now = System.currentTimeMillis()
         val nextPrayer = findNextPrayer(now)
 
-        val title: String
+        // Line 1: City + Hijri date
+        val city = prefs.getString("flutter.city_name", null) ?: ""
+        val hijri = prefs.getString("flutter.cached_hijri_date", null) ?: ""
+        val title = when {
+            city.isNotEmpty() && hijri.isNotEmpty() -> "$city • $hijri"
+            city.isNotEmpty() -> city
+            hijri.isNotEmpty() -> hijri
+            else -> "أوقات الصلاة"
+        }
+
+        // Line 2: Prayer name + time + countdown
         val text: String
         var nextInterval = NORMAL_INTERVAL_MS
 
         if (nextPrayer != null) {
             val remainingMs = nextPrayer.triggerMillis - now
+            // Get the display time (HH:mm) for this prayer
+            val displayTime = prefs.getString("flutter.prayer_${nextPrayer.id}_time", null) ?: ""
 
             // Pro-tip #3: Zero-moment state machine
             if (remainingMs <= 0) {
-                // Prayer time has arrived — briefly show "حان الوقت" then advance
-                title = "حان وقت صلاة ${nextPrayer.name}"
-                text = "حان الآن"
-                currentPrayerId = null // Force re-scan on next tick
-                nextInterval = 5_000L // Check again in 5s for next prayer
+                text = "حان وقت صلاة ${nextPrayer.name}"
+                currentPrayerId = null
+                nextInterval = 5_000L
             } else {
                 val totalSeconds = remainingMs / 1_000
                 val hours = totalSeconds / 3600
                 val minutes = (totalSeconds % 3600) / 60
                 val seconds = totalSeconds % 60
 
-                title = "صلاة ${nextPrayer.name}"
+                val countdownStr = when {
+                    remainingMs <= 60_000 -> {
+                        nextInterval = FAST_INTERVAL_MS
+                        "بعد $seconds ثانية"
+                    }
+                    hours > 0 -> {
+                        nextInterval = NORMAL_INTERVAL_MS
+                        "بعد $hours ساعة و $minutes دقيقة"
+                    }
+                    else -> {
+                        nextInterval = NORMAL_INTERVAL_MS
+                        "بعد $minutes دقيقة"
+                    }
+                }
 
-                // Pro-tip #4: Switch to per-second updates in final minute
-                if (remainingMs <= 60_000) {
-                    text = "بعد $seconds ثانية"
-                    nextInterval = FAST_INTERVAL_MS
-                } else if (hours > 0) {
-                    text = "بعد $hours ساعة و $minutes دقيقة"
-                    nextInterval = NORMAL_INTERVAL_MS
+                text = if (displayTime.isNotEmpty()) {
+                    "${nextPrayer.name} $displayTime — $countdownStr"
                 } else {
-                    text = "بعد $minutes دقيقة"
-                    nextInterval = NORMAL_INTERVAL_MS
+                    "${nextPrayer.name} — $countdownStr"
                 }
 
                 currentPrayerId = nextPrayer.id
             }
         } else {
-            title = "أوقات الصلاة"
             text = "لا توجد صلاة قادمة"
             nextInterval = NORMAL_INTERVAL_MS
         }
@@ -196,7 +212,7 @@ class PrayerCountdownService : Service() {
         )
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.launcher_icon)
+            .setSmallIcon(R.drawable.android12splash)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

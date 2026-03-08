@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:ui';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -192,7 +193,13 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
     final prayers = _buildPrayersList(data);
     final nextIndex = _getNextPrayerIndex(prayers);
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,  // White icons on Android
+        statusBarBrightness: Brightness.dark,        // White icons on iOS
+      ),
+      child: Scaffold(
       backgroundColor: const Color(0xff0A2239),
       body: Stack(
         children: [
@@ -217,6 +224,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 

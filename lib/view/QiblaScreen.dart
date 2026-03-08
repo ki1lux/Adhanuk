@@ -114,7 +114,13 @@ class _QiblaScreenState extends State<QiblaScreen> {
       );
     }
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,  // White icons on Android
+        statusBarBrightness: Brightness.dark,        // White icons on iOS
+      ),
+      child: Scaffold(
       backgroundColor: const Color(0xff0A2239),
       body: Stack(
         children: [
@@ -138,7 +144,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                 // Haptic feedback when compass rotates significantly
                 final double currentDir = (qiblahDirection.direction ?? 0).toDouble();
                 final int now = DateTime.now().millisecondsSinceEpoch;
-                if ((currentDir - _lastDirection).abs() > 3 && now - _lastHapticTime > 100) {
+                if ((currentDir - _lastDirection).abs() > 1 && now - _lastHapticTime > 200) {
                   HapticFeedback.lightImpact();
                   _lastDirection = currentDir;
                   _lastHapticTime = now;
@@ -214,6 +220,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }

@@ -22,7 +22,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,  // White icons on Android
+        statusBarBrightness: Brightness.dark,        // White icons on iOS
+      ),
+      child: Scaffold(
       backgroundColor: const Color(0xff0A2239),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -146,6 +152,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
