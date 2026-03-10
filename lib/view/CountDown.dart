@@ -78,7 +78,6 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
     if (_isAdhanPhase && _remaining.inSeconds <= 0 && _lastPlayedPrayer != _nextPrayerName) {
       _isAdhanPhase = false;
       _lastPlayedPrayer = _nextPrayerName;
-      _controller.callNativeAdhanNow(_nextPrayerName!, _prayerTime!);
       _iqamaStartTime = DateTime.now();
       _countUp = Duration.zero;
     } else if (!_isAdhanPhase && _iqamaStartTime != null) {

@@ -46,6 +46,7 @@ dependencies:
   flutter_riverpod: ^2.4.0
   http: ^1.1.0
   flutter_native_splash: ^2.4.7
+  audioplayers: ^6.6.0
 
   
 

@@ -24,22 +24,6 @@ class MainActivity : FlutterActivity(){
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler {
                 call, result ->
             when (call.method) {
-                "showFullScreenAdhan" -> {
-                    val prayerName = call.argument<String>("prayerName") ?: "صلاة"
-                    val prayerTime = call.argument<String>("prayerTime") ?: "حان وقت الصلاة"
-
-                    val intent = Intent(this, AdhanActivity::class.java).apply {
-                        putExtra("prayerName" , prayerName)
-                        putExtra("prayerTime", prayerTime)
-
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    }
-
-                    startActivity(intent)
-                    result.success("Adhan shown")
-                }
                 "startAdhanService" -> {
                     val prayerName = call.argument<String>("prayerName") ?: "صلاة"
                     val prayerTime = call.argument<String>("prayerTime") ?: "حان وقت الصلاة"
@@ -90,11 +74,6 @@ class MainActivity : FlutterActivity(){
                     } else {
                         result.success(true)
                     }
-                }
-                "testNativeAlarm" -> {
-                    val triggerTime = System.currentTimeMillis() + 10000 // 10 seconds from now
-                    AlarmSchedulerHelper.scheduleAlarm(this, 999, triggerTime)
-                    result.success("Test alarm scheduled for 10 seconds from now")
                 }
                 "openBatterySettings" -> {
                     try {

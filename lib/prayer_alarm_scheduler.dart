@@ -156,21 +156,6 @@ class PrayerAlarmScheduler {
     }
   }
 
-  /// Schedule a test alarm for 10 seconds from now
-  static Future<void> testNativeAlarm() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      // Store dummy prayer info for test
-      await prefs.setString('prayer_999_name', 'اختبار التنبيه');
-      await prefs.setString('prayer_999_time', DateFormat('HH:mm').format(DateTime.now().add(const Duration(seconds: 10))));
-      
-      await _channel.invokeMethod('testNativeAlarm');
-      print('Test native alarm requested');
-    } catch (e) {
-      print('Error requesting test alarm: $e');
-    }
-  }
-
   /// Cancel all scheduled alarms (both Flutter notifications and native alarms)
   static Future<void> cancelAll() async {
     await _notificationsPlugin.cancelAll();

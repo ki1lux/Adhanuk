@@ -100,10 +100,14 @@ object AdhanPlayer {
     /**
      * Get the raw resource ID for a given sound name.
      * Maps Flutter preference names (e.g. "adhan1") to Android resource IDs.
+     * Using explicit references prevents the Android resource shrinker from removing them.
      */
     fun getSoundResId(context: Context, soundName: String): Int {
-        return context.resources.getIdentifier(soundName, "raw", context.packageName).let {
-            if (it != 0) it else R.raw.adhan1 // Fallback to adhan1
+        return when (soundName) {
+            "adhan2" -> R.raw.adhan2
+            "adhan3" -> R.raw.adhan3
+            "adhan1" -> R.raw.adhan1
+            else -> R.raw.adhan1
         }
     }
 

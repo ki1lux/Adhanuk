@@ -89,8 +89,6 @@ class AdhanAlarmService : Service() {
             // Still try to play audio even if foreground fails
         }
 
-        // Launch the full-screen Adhan Activity
-        launchAdhanActivity(prayerName, prayerTime)
 
         // Play Adhan on ALARM stream with audio focus
         val resId = AdhanPlayer.getSoundResId(this, soundName)
@@ -128,23 +126,6 @@ class AdhanAlarmService : Service() {
         AdhanPlayer.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
-    }
-
-    private fun launchAdhanActivity(prayerName: String, prayerTime: String) {
-        try {
-            val adhanIntent = Intent(this, AdhanActivity::class.java).apply {
-                putExtra("prayerName", prayerName)
-                putExtra("prayerTime", prayerTime)
-                addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
-                )
-            }
-            startActivity(adhanIntent)
-        } catch (e: Exception) {
-            Log.e(TAG, "Could not launch AdhanActivity: ${e.message}")
-        }
     }
 
     private fun buildNotification(prayerName: String, prayerTime: String): android.app.Notification {

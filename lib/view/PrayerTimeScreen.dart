@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:ui';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -699,6 +700,9 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
     String selectedSound =
         prefs.getString('adhan_sound_$prayerName') ?? 'adhan1';
 
+    final audioPlayer = AudioPlayer();
+    String? playingSound;
+
     // Available sounds - add more as you add mp3 files
     final sounds = [
       {'id': 'adhan1', 'name': 'الأذان الأول'},
@@ -766,6 +770,27 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                                 fontSize: 16,
                               ),
                             ),
+                            secondary: IconButton(
+                              icon: Icon(
+                                playingSound == sound['id']
+                                    ? Icons.stop_circle_outlined
+                                    : Icons.play_circle_outline,
+                                color: const Color(0xFF0768C5),
+                              ),
+                              onPressed: () async {
+                                if (playingSound == sound['id']) {
+                                  await audioPlayer.stop();
+                                  setDialogState(() => playingSound = null);
+                                } else {
+                                  await audioPlayer.stop();
+                                  setDialogState(() => playingSound = sound['id']);
+                                  await audioPlayer.play(AssetSource('audio/${sound['id']}.mp3'));
+                                  audioPlayer.onPlayerComplete.listen((_) {
+                                    setDialogState(() => playingSound = null);
+                                  });
+                                }
+                              },
+                            ),
                             value: sound['id']!,
                             groupValue: selectedSound,
                             activeColor: const Color(0xFF0768C5),
@@ -827,6 +852,10 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                   ],
                 ),
           ),
-    );
+    ).then((_) {
+      // Clean up the player when dialog is closed/dismissed
+      audioPlayer.stop();
+      audioPlayer.dispose();
+    });
   }
 }

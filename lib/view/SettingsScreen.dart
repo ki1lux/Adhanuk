@@ -93,12 +93,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _settingsButtons(Icons.info, "Alarm Status", () {
                   _showAlarmStatusDialog();
                 }),
-                _settingsButtons(Icons.timer, "Test Native Alarm (10s)", () {
-                  PrayerAlarmScheduler.testNativeAlarm();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Alarm scheduled! Close app to test.')),
-                  );
-                }),
                 _settingsButtons(Icons.build, "Troubleshoot Alarm", () {
                   _showTroubleshootDialog();
                 }),
