@@ -1,9 +1,9 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myadhan/model/PrayerTimeModel.dart';
 import 'package:myadhan/prayer_alarm_scheduler.dart';
 import 'package:myadhan/providers/prayer_times_provider.dart';
-import 'package:myadhan/services/daily_prayer_updater.dart';
 import 'package:myadhan/view/QiblaScreen.dart';
 import 'package:myadhan/view/PrayerTimeScreen.dart';
 import 'dart:ui';
@@ -21,8 +21,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
   
-  // Initialize daily background updater for prayer times
-  await DailyPrayerUpdater.initialize();
+  // Register native daily prayer worker (replaces Flutter WorkManager)
+  const channel = MethodChannel('com.myadhan/notification');
+  try {
+    await channel.invokeMethod('registerDailyPrayerWorker');
+  } catch (e) {
+    debugPrint('Failed to register daily prayer worker: $e');
+  }
   
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -166,10 +171,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-
-          splashColor: const Color.fromARGB(255, 14, 43, 70),
-          highlightColor: const Color(0xff0A2239),
-          hoverColor: const Color(0xff0A2239),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.transparent,
           onTap: () {
             setState(() => _selectedIndex = index);
           },
@@ -181,11 +185,25 @@ class _MyAppState extends ConsumerState<MyApp> {
               scale: isSelected ? 1.15 : 1.0,
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOut,
-              child: SvgPicture.asset(
-                asset,
-                colorFilter: ColorFilter.mode(
-                  isSelected ? Colors.white : Colors.white60,
-                  BlendMode.srcIn,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: SvgPicture.asset(
+                  asset,
+                  colorFilter: ColorFilter.mode(
+                    isSelected ? Colors.white : Colors.white60,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ),
             ),

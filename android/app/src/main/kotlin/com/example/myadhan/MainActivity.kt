@@ -116,6 +116,10 @@ class MainActivity : FlutterActivity(){
                     AlarmSchedulerHelper.rescheduleAllFromPrefs(this)
                     result.success("Alarms rescheduled from SharedPreferences")
                 }
+                "registerDailyPrayerWorker" -> {
+                    PrayerUpdateWorker.enqueue(this)
+                    result.success("Daily prayer worker registered")
+                }
                 "startCountdownService" -> {
                     try {
                         val serviceIntent = Intent(this, PrayerCountdownService::class.java)

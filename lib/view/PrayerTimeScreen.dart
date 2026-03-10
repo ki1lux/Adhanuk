@@ -35,27 +35,56 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
     try {
       final position = await Geolocator.getCurrentPosition();
 
-      // save location
+      // save location (same keys the rest of the app uses)
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('lat', position.latitude);
-      await prefs.setDouble('lon', position.longitude);
+      await prefs.setDouble('last_latitude', position.latitude);
+      await prefs.setDouble('last_longitude', position.longitude);
 
-      // converting coordinates to country and city name
-      final placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
+      // Get Arabic location names via Nominatim reverse geocoding
+      try {
+        final geoUri = Uri.parse(
+          'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json&addressdetails=1&accept-language=ar',
+        );
+        final geoResponse = await http.get(
+          geoUri,
+          headers: {'User-Agent': 'Adhani-App/1.0'},
+        );
+        if (geoResponse.statusCode == 200) {
+          final geoData = json.decode(geoResponse.body);
+          final address = geoData['address'] as Map<String, dynamic>?;
+          if (address != null) {
+            String country = address['country'] as String? ?? '';
+            String city = address['city'] as String? 
+                ?? address['town'] as String? 
+                ?? address['village'] as String? 
+                ?? address['state'] as String? 
+                ?? '';
 
-      if (placemarks.isNotEmpty) {
-        String country = placemarks[0].country ?? '';
-        String city = placemarks[0].locality ?? '';
-
-        // save names of country and city for quick access
-        await prefs.setString('country_name', country);
-        await prefs.setString('city_name', city);
-
-        _updateLocation(country, city);
+            await prefs.setString('country_name', country);
+            await prefs.setString('city_name', city);
+            _updateLocation(country, city);
+          }
+        }
+      } catch (e) {
+        // Fallback to geocoding package if Nominatim fails
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        if (placemarks.isNotEmpty) {
+          String country = placemarks[0].country ?? '';
+          String city = placemarks[0].locality ?? '';
+          await prefs.setString('country_name', country);
+          await prefs.setString('city_name', city);
+          _updateLocation(country, city);
+        }
       }
+
+      // Refresh prayer times with GPS coordinates
+      ref.read(prayerTimesProvider.notifier).fetchPrayerTimes(
+        lat: position.latitude,
+        lng: position.longitude,
+      );
     } catch (e) {
       print("Error: $e");
     }
@@ -230,42 +259,60 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
 
   Widget _buildLocationHeader() {
     return Padding(
-      padding: const EdgeInsets.only(right: 16, top: 89),
+      padding: const EdgeInsets.only(right: 16, left: 48, top: 89),
       child: InkWell(
         onTap: _showLocationDialog,
         borderRadius: BorderRadius.circular(12),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _countryText,
-                  style: const TextStyle(
-                    color: Color(0xffF0F8FF),
-                    fontFamily: 'Cairo',
-                    fontSize: 38,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.edit, color: Colors.white54, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      _cityText,
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 2 / 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      _countryText,
                       style: const TextStyle(
                         color: Color(0xffF0F8FF),
                         fontFamily: 'Cairo',
-                        fontSize: 24,
-                        fontWeight: FontWeight.w100,
+                        fontSize: 38,
+                        fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.edit, color: Colors.white54, size: 14),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            _cityText,
+                            style: const TextStyle(
+                              color: Color(0xffF0F8FF),
+                              fontFamily: 'Cairo',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w100,
+                            ),
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             const Icon(Icons.location_on, color: Color(0xffF0F8FF), size: 42),
           ],
@@ -350,22 +397,26 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                                   final List<dynamic> data = json.decode(
                                     response.body,
                                   );
-                                  final List<Map<String, dynamic>> results =
-                                      data
-                                          .map(
-                                            (item) => {
-                                              'name':
-                                                  item['display_name']
-                                                      as String,
-                                              'lat': double.parse(
-                                                item['lat'] as String,
-                                              ),
-                                              'lon': double.parse(
-                                                item['lon'] as String,
-                                              ),
-                                            },
-                                          )
-                                          .toList();
+                                final List<Map<String, dynamic>> results =
+                                    data
+                                        .map(
+                                          (item) {
+                                            final address = item['address'] as Map<String, dynamic>? ?? {};
+                                            final city = address['city'] as String?
+                                                ?? address['town'] as String?
+                                                ?? address['village'] as String?
+                                                ?? address['state'] as String?
+                                                ?? (item['display_name'] as String).split(',').first.trim();
+                                            final country = address['country'] as String? ?? '';
+                                            return {
+                                              'city': city,
+                                              'country': country,
+                                              'lat': double.parse(item['lat'] as String),
+                                              'lon': double.parse(item['lon'] as String),
+                                            };
+                                          },
+                                        )
+                                        .toList();
                                   setDialogState(() {
                                     suggestions = results;
                                     isSearching = false;
@@ -396,15 +447,8 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                               itemCount: suggestions.length,
                               itemBuilder: (context, index) {
                                 final loc = suggestions[index];
-                                final name = loc['name'] as String;
-                                // Shorten the display name (take first 2 parts)
-                                final shortName =
-                                    name.split(',').take(2).join(',').trim();
-                                final parts = shortName.split(',');
-                                final cityName = parts.first.trim();
-                                final countryName = parts.length > 1 
-                                    ? parts[1].trim() 
-                                    : cityName;
+                                final cityName = loc['city'] as String;
+                                final countryName = loc['country'] as String;
                                 return ListTile(
                                   dense: true,
                                   leading: const Icon(
@@ -413,7 +457,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                                     size: 20,
                                   ),
                                   title: Text(
-                                    shortName,
+                                    '$cityName، $countryName',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -436,7 +480,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                                     _updateLocation(countryName, cityName);
                                     ref
                                         .read(prayerTimesProvider.notifier)
-                                        .fetchPrayerTimes();
+                                        .fetchPrayerTimes(lat: lat, lng: lon);
                                   },
                                 );
                               },
@@ -535,8 +579,11 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
           _updateLocation(cityName, '');
         }
 
-        // Refresh prayer times
-        ref.read(prayerTimesProvider.notifier).fetchPrayerTimes();
+        // Refresh prayer times with manual coordinates
+        ref.read(prayerTimesProvider.notifier).fetchPrayerTimes(
+          lat: location.latitude,
+          lng: location.longitude,
+        );
       } else {
         _updateLocation('لم يتم العثور', cityName);
       }
@@ -551,6 +598,8 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
       child: InkWell(
         onTap: () => _showSoundDialog(name),
         borderRadius: BorderRadius.circular(36),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(36),
           child: BackdropFilter(
@@ -570,12 +619,30 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                       future: _isAdhanEnabled(name),
                       builder: (context, snapshot) {
                         final enabled = snapshot.data ?? true;
-                        return Icon(
-                          enabled ? Icons.volume_up : Icons.volume_off,
-                          color:
-                              enabled
+                        return GestureDetector(
+                          onTap: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            final newVal = !enabled;
+                            await prefs.setBool('adhan_enabled_$name', newVal);
+                            setState(() {}); // Refresh icon
+
+                            // Reschedule alarms with new setting
+                            final prayerTimesAsync = ref.read(prayerTimesProvider);
+                            if (prayerTimesAsync.hasValue) {
+                              await PrayerAlarmScheduler.scheduleAllPrayersWithData(
+                                prayerTimesAsync.value!,
+                              );
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Icon(
+                              enabled ? Icons.volume_up : Icons.volume_off,
+                              color: enabled
                                   ? const Color(0xffF0F8FF)
                                   : Colors.white38,
+                            ),
+                          ),
                         );
                       },
                     ),

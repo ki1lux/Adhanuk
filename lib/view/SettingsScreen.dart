@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:myadhan/prayer_alarm_scheduler.dart';
+import 'package:myadhan/providers/prayer_times_provider.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool isFullScreen = true;
   Map<String, dynamic> alarmStatus = {};
 
@@ -101,6 +104,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }),
                 _settingsButtons(Icons.battery_alert, "تعطيل تحسين البطارية", () {
                   _openBatteryOptimizationSettings();
+                }),
+                _settingsButtons(Icons.calculate, "طريقة الحساب", () {
+                  _showCalculationMethodDialog();
                 }),
                 _settingsButtons(Icons.mosque, "Adhani\nversion : 1.0", () {}),
 
@@ -422,6 +428,137 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('فتح الإعدادات', style: TextStyle(color: Colors.white)),
           ),
         ],
+      ),
+    );
+  }
+
+  /// List of all Aladhan API calculation methods
+  static const List<Map<String, dynamic>> _calculationMethods = [
+    {'id': 19, 'name': 'الجزائر', 'nameEn': 'Algeria'},
+    {'id': 4, 'name': 'أم القرى، مكة', 'nameEn': 'Umm Al-Qura, Makkah'},
+    {'id': 5, 'name': 'الهيئة المصرية العامة للمساحة', 'nameEn': 'Egypt'},
+    {'id': 3, 'name': 'رابطة العالم الإسلامي', 'nameEn': 'Muslim World League'},
+    {'id': 2, 'name': 'أمريكا الشمالية (ISNA)', 'nameEn': 'ISNA'},
+    {'id': 1, 'name': 'جامعة كراتشي', 'nameEn': 'Karachi'},
+    {'id': 13, 'name': 'تركيا', 'nameEn': 'Turkey'},
+    {'id': 7, 'name': 'طهران', 'nameEn': 'Tehran'},
+    {'id': 0, 'name': 'الشيعة الإثنا عشرية، قم', 'nameEn': 'Jafari'},
+    {'id': 8, 'name': 'منطقة الخليج', 'nameEn': 'Gulf Region'},
+    {'id': 9, 'name': 'الكويت', 'nameEn': 'Kuwait'},
+    {'id': 10, 'name': 'قطر', 'nameEn': 'Qatar'},
+    {'id': 11, 'name': 'سنغافورة', 'nameEn': 'Singapore'},
+    {'id': 12, 'name': 'فرنسا', 'nameEn': 'France'},
+    {'id': 14, 'name': 'روسيا', 'nameEn': 'Russia'},
+    {'id': 15, 'name': 'لجنة رؤية الهلال', 'nameEn': 'Moonsighting'},
+    {'id': 16, 'name': 'دبي', 'nameEn': 'Dubai'},
+    {'id': 17, 'name': 'ماليزيا (JAKIM)', 'nameEn': 'Malaysia'},
+    {'id': 18, 'name': 'تونس', 'nameEn': 'Tunisia'},
+    {'id': 20, 'name': 'إندونيسيا', 'nameEn': 'Indonesia'},
+    {'id': 21, 'name': 'المغرب', 'nameEn': 'Morocco'},
+    {'id': 22, 'name': 'البرتغال', 'nameEn': 'Portugal'},
+    {'id': 23, 'name': 'الأردن', 'nameEn': 'Jordan'},
+  ];
+
+  void _showCalculationMethodDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    int currentMethod = prefs.getInt('calculation_method') ?? 19;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF0E2031),
+          title: const Text(
+            'طريقة الحساب',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Cairo',
+              fontWeight: FontWeight.w700,
+              fontSize: 24,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: ListView.builder(
+              itemCount: _calculationMethods.length,
+              itemBuilder: (context, index) {
+                final method = _calculationMethods[index];
+                final id = method['id'] as int;
+                final name = method['name'] as String;
+                final nameEn = method['nameEn'] as String;
+                return RadioListTile<int>(
+                  title: Text(
+                    name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Cairo',
+                      fontSize: 15,
+                    ),
+                  ),
+                  subtitle: Text(
+                    nameEn,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                  value: id,
+                  groupValue: currentMethod,
+                  activeColor: const Color(0xFF0768C5),
+                  onChanged: (value) {
+                    setDialogState(() => currentMethod = value!);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'إلغاء',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                await prefs.setInt('calculation_method', currentMethod);
+                Navigator.pop(context);
+
+                // Refresh prayer times with new method
+                ref.read(prayerTimesProvider.notifier).fetchPrayerTimes();
+
+                // Reschedule alarms after prayer provider updates
+                final prayerTimesAsync = ref.read(prayerTimesProvider);
+                if (prayerTimesAsync.hasValue) {
+                  await PrayerAlarmScheduler.scheduleAllPrayersWithData(
+                    prayerTimesAsync.value!,
+                  );
+                }
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم تغيير طريقة الحساب ✅')),
+                  );
+                }
+              },
+              child: const Text(
+                'حفظ',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

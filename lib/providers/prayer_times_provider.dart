@@ -59,21 +59,41 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
     }
   }
 
-  /// Fetches prayer times from API
-  Future<void> fetchPrayerTimes() async {
+  /// Fetches prayer times from API.
+  /// If [lat] and [lng] are provided, uses them directly (manual location).
+  /// Otherwise, tries GPS then falls back to cached location.
+  Future<void> fetchPrayerTimes({double? lat, double? lng}) async {
     print('🕌 fetchPrayerTimes called');
     state = const AsyncValue.loading();
 
     try {
-      print('📍 Getting coordinates...');
-      final coords = await _getCoordinates();
-      print('📍 Got coordinates: ${coords.lat}, ${coords.lng}');
+      double latitude;
+      double longitude;
+
+      if (lat != null && lng != null) {
+        // Manual location — use directly, skip GPS
+        latitude = lat;
+        longitude = lng;
+        print('📍 Using manual location: $latitude, $longitude');
+      } else {
+        // Auto location — try GPS, fallback to cached
+        print('📍 Getting coordinates...');
+        final coords = await _getCoordinates();
+        latitude = coords.lat;
+        longitude = coords.lng;
+        print('📍 Got coordinates: $latitude, $longitude');
+      }
+      
+      // Read user's preferred calculation method (default: 19 = Algeria)
+      final prefs = await SharedPreferences.getInstance();
+      final method = prefs.getInt('calculation_method') ?? 19;
       
       final response = await _apiService.fetchPrayerTimes(
-        latitude: coords.lat,
-        longitude: coords.lng,
+        latitude: latitude,
+        longitude: longitude,
+        method: method,
       );
-      print('✅ Got prayer times from API');
+      print('✅ Got prayer times from API (method=$method)');
 
       final model = PrayerTimeModel(
         fajer: _parseTimeString(response.fajr),
@@ -85,7 +105,6 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
       );
 
       // Cache Hijri date to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('cached_hijri_date', model.dateOnHijri);
 
       state = AsyncValue.data(model);

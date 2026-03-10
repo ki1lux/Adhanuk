@@ -14,6 +14,11 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Foreground Service that shows a persistent notification with countdown
@@ -60,6 +65,7 @@ class PrayerCountdownService : Service() {
     // Pro-tip #2: Keep a reference to the builder — don't recreate every tick
     private var cachedBuilder: NotificationCompat.Builder? = null
     private var currentPrayerId: Int? = null // Track which prayer we're counting down to
+    private var lastTrackedDate: String = "" // Track date to detect midnight crossing
 
     private val updateRunnable = object : Runnable {
         override fun run() {
@@ -74,6 +80,7 @@ class PrayerCountdownService : Service() {
     override fun onCreate() {
         super.onCreate()
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        lastTrackedDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         createNotificationChannel()
         Log.d(TAG, "Service created")
     }
@@ -124,6 +131,22 @@ class PrayerCountdownService : Service() {
      */
     private fun updateNotification(): Long {
         val now = System.currentTimeMillis()
+
+        // Detect midnight crossing — trigger immediate refresh
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        if (lastTrackedDate.isNotEmpty() && todayStr != lastTrackedDate) {
+            Log.d(TAG, "Date changed from $lastTrackedDate to $todayStr — triggering immediate prayer update")
+            lastTrackedDate = todayStr
+            // Fire a one-time worker to fetch fresh data NOW
+            try {
+                val immediateWork = OneTimeWorkRequestBuilder<PrayerUpdateWorker>().build()
+                WorkManager.getInstance(this).enqueue(immediateWork)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to enqueue immediate worker: ${e.message}")
+            }
+        }
+        lastTrackedDate = todayStr
+
         val nextPrayer = findNextPrayer(now)
 
         // Line 1: City + Hijri date
