@@ -73,13 +73,13 @@ class _adhanScreen extends ConsumerState<AdhanScreen> {
               loading: () => _buildHijriText(_cachedHijri),
               error: (_, __) => _buildHijriText(_cachedHijri),
               data: (data) {
-                // Update cache when fresh data arrives
-                print("🩵 new date : $data");
-                if (data.dateOnHijri.isNotEmpty &&
-                    data.dateOnHijri != _cachedHijri) {
-                  _cachedHijri = data.dateOnHijri;
-                  SharedPreferences.getInstance().then((prefs) {
-                    prefs.setString('cached_hijri_date', data.dateOnHijri);
+                // Update local memory cache so UI doesn't jump on next rebuild
+                if (data.dateOnHijri.isNotEmpty && data.dateOnHijri != _cachedHijri) {
+                  // We schedule the setState for next frame to avoid "setState during build" errors
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() => _cachedHijri = data.dateOnHijri);
+                    }
                   });
                 }
                 return _buildHijriText(data.dateOnHijri);

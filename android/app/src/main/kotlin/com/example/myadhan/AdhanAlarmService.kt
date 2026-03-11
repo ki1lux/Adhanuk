@@ -150,13 +150,13 @@ class AdhanAlarmService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("حان وقت صلاة $prayerName")
             .setContentText("الوقت: $prayerTime")
-            .setSmallIcon(R.drawable.android12splash)
+            .setSmallIcon(R.drawable.ic_stat_adhan)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true) // Can't be swiped while Adhan is playing
             .setContentIntent(tapPending)
-            .addAction(R.drawable.android12splash, "إيقاف الأذان", stopPending)
+            .addAction(R.drawable.ic_stat_adhan, "إيقاف الأذان", stopPending)
             .setSound(null) // No notification sound — audio via MediaPlayer
             .build()
     }

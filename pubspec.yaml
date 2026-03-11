@@ -47,6 +47,7 @@ dependencies:
   http: ^1.1.0
   flutter_native_splash: ^2.4.7
   audioplayers: ^6.6.0
+  image: ^4.8.0
 
   
 
@@ -71,13 +72,14 @@ flutter_launcher_icons:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 flutter_native_splash:
-  color: "#0A2239" 
+  color: "#0B1220" 
   image: assets/mainIcon.png
   fullscreen: true
 
   android_12: 
-    color: "#0A2239" 
-    image: assets/splash_icon.png
+    color: "#0B1220"
+    image: assets/mainIcon.png
+    icon_background_color: "#0B1220"
 
 # The following section is specific to Flutter packages.
 flutter:
@@ -100,6 +102,7 @@ flutter:
     - assets/test.svg
     - assets/arrow.svg
     - assets/settingsIcon.svg
+    - assets/mainIcon.png
     - assets/audio/
 
   # An image asset can refer to one or more resolution-specific "variants", see

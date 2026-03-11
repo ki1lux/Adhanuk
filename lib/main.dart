@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:myadhan/view/SettingsScreen.dart';
 import 'package:myadhan/view/adhan_screen.dart';
+import 'package:myadhan/view/splash_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:timezone/data/latest.dart' as tz;
@@ -41,15 +42,7 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> {
   final _notificationsPlugin = FlutterLocalNotificationsPlugin();
-  int _selectedIndex = 0;
   bool _notificationsScheduled = false;
-
-  static final _pages = <Widget>[
-    AdhanScreen(),
-    PrayerTimeScreen(),
-    QiblaScreen(),
-    SettingsScreen(),
-  ];
 
   @override
   void initState() {
@@ -65,13 +58,12 @@ class _MyAppState extends ConsumerState<MyApp> {
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Africa/Algiers'));
 
-    const androidSettings = AndroidInitializationSettings('@drawable/android12splash');
+    const androidSettings = AndroidInitializationSettings('@drawable/ic_stat_adhan');
     const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     
     _notificationsPlugin.initialize(settings);
   }
-
 
   Future<void> _requestPermissions() async {
     debugPrint('Requesting permissions...');
@@ -115,25 +107,45 @@ class _MyAppState extends ConsumerState<MyApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(scaffoldBackgroundColor: const Color(0xff0A2239),
       canvasColor: const Color(0xff0A2239)),
-      home: Scaffold(
-        extendBody: true,
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 350),
-          switchInCurve: Curves.easeInOut,
-          switchOutCurve: Curves.easeInOut,
-          transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          child: KeyedSubtree(
-            key: ValueKey<int>(_selectedIndex),
-            child: _pages[_selectedIndex],
-          ),
+      home: const SplashScreen(nextScreen: MainScreen()),
+    );
+  }
+}
+
+class MainScreen extends ConsumerStatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  ConsumerState<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends ConsumerState<MainScreen> {
+  int _selectedIndex = 0;
+
+  static final _pages = <Widget>[
+    AdhanScreen(),
+    PrayerTimeScreen(),
+    QiblaScreen(),
+    SettingsScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBody: true,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: KeyedSubtree(
+          key: ValueKey<int>(_selectedIndex),
+          child: _pages[_selectedIndex],
         ),
-        bottomNavigationBar: _buildBottomNav(),
       ),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
