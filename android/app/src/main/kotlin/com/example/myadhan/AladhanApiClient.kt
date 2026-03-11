@@ -34,8 +34,9 @@ object AladhanApiClient {
         method: Int = 19,
         school: Int = 0
     ): PrayerTimesResponse? {
-        val timestamp = System.currentTimeMillis() / 1000
-        val urlStr = "$BASE_URL/$timestamp?latitude=$latitude&longitude=$longitude&method=$method&school=$school"
+        val dateFormat = java.text.SimpleDateFormat("dd-MM-yyyy", java.util.Locale.US)
+        val dateString = dateFormat.format(java.util.Date())
+        val urlStr = "$BASE_URL/$dateString?latitude=$latitude&longitude=$longitude&method=$method&school=$school"
 
         Log.d(TAG, "Fetching: $urlStr")
 

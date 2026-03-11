@@ -54,9 +54,10 @@ class PrayerTimesApiService {
     int method = 19,
     int school = 0,
   }) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final now = DateTime.now();
+    final dateStr = '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}';
     final uri = Uri.parse(
-      '$_baseUrl/$timestamp?latitude=$latitude&longitude=$longitude&method=$method&school=$school',
+      '$_baseUrl/$dateStr?latitude=$latitude&longitude=$longitude&method=$method&school=$school',
     );
 
     final response = await _client.get(uri).timeout(_timeout);
