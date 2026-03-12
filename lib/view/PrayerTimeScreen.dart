@@ -364,172 +364,178 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  content: SizedBox(
-                    height: 222,
-                    width: double.maxFinite,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(height: 24),
-                        TextField(
-                          controller: cityController,
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'أدخل اسم المدينة (بالإنجليزية)',
-                            hintStyle: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 16,
-                            ),
-                            suffixIcon:
-                                isSearching
-                                    ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: Padding(
-                                        padding: EdgeInsets.all(12),
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 1,
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                    )
-                                    : null,
-                            enabledBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white54),
-                            ),
-                            focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white),
-                            ),
-                          ),
-                          onChanged: (value) async {
-                            if (value.length >= 3) {
-                              setDialogState(() => isSearching = true);
-                              try {
-                                // Use Nominatim API for better city suggestions
-                                final uri = Uri.parse(
-                                  'https://nominatim.openstreetmap.org/search?q=$value&format=json&limit=5&addressdetails=1&accept-language=ar',
-                                );
-                                final response = await http.get(
-                                  uri,
-                                  headers: {'User-Agent': 'AdhanUK-App/1.0'},
-                                );
-                                if (response.statusCode == 200) {
-                                  final List<dynamic> data = json.decode(
-                                    response.body,
-                                  );
-                                final List<Map<String, dynamic>> results =
-                                    data
-                                        .map(
-                                          (item) {
-                                            final address = item['address'] as Map<String, dynamic>? ?? {};
-                                            final city = address['city'] as String?
-                                                ?? address['town'] as String?
-                                                ?? address['village'] as String?
-                                                ?? address['state'] as String?
-                                                ?? (item['display_name'] as String).split(',').first.trim();
-                                            final country = address['country'] as String? ?? '';
-                                            return {
-                                              'city': city,
-                                              'country': country,
-                                              'lat': double.parse(item['lat'] as String),
-                                              'lon': double.parse(item['lon'] as String),
-                                            };
-                                          },
+                  content: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.5,
+                    ),
+                    child: SizedBox(
+                      width: double.maxFinite,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 24),
+                            TextField(
+                              controller: cityController,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: 'أدخل اسم المدينة (بالإنجليزية)',
+                                hintStyle: const TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 16,
+                                ),
+                                suffixIcon:
+                                    isSearching
+                                        ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: Padding(
+                                            padding: EdgeInsets.all(12),
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 1,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
                                         )
-                                        .toList();
-                                  setDialogState(() {
-                                    suggestions = results;
-                                    isSearching = false;
-                                  });
+                                        : null,
+                                enabledBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.white54),
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.white),
+                                ),
+                              ),
+                              onChanged: (value) async {
+                                if (value.length >= 3) {
+                                  setDialogState(() => isSearching = true);
+                                  try {
+                                    // Use Nominatim API for better city suggestions
+                                    final uri = Uri.parse(
+                                      'https://nominatim.openstreetmap.org/search?q=$value&format=json&limit=5&addressdetails=1&accept-language=ar',
+                                    );
+                                    final response = await http.get(
+                                      uri,
+                                      headers: {'User-Agent': 'AdhanUK-App/1.0'},
+                                    );
+                                    if (response.statusCode == 200) {
+                                      final List<dynamic> data = json.decode(
+                                        response.body,
+                                      );
+                                    final List<Map<String, dynamic>> results =
+                                        data
+                                            .map(
+                                              (item) {
+                                                final address = item['address'] as Map<String, dynamic>? ?? {};
+                                                final city = address['city'] as String?
+                                                    ?? address['town'] as String?
+                                                    ?? address['village'] as String?
+                                                    ?? address['state'] as String?
+                                                    ?? (item['display_name'] as String).split(',').first.trim();
+                                                final country = address['country'] as String? ?? '';
+                                                return {
+                                                  'city': city,
+                                                  'country': country,
+                                                  'lat': double.parse(item['lat'] as String),
+                                                  'lon': double.parse(item['lon'] as String),
+                                                };
+                                              },
+                                            )
+                                            .toList();
+                                      setDialogState(() {
+                                        suggestions = results;
+                                        isSearching = false;
+                                      });
+                                    } else {
+                                      setDialogState(() {
+                                        suggestions = [];
+                                        isSearching = false;
+                                      });
+                                    }
+                                  } catch (_) {
+                                    setDialogState(() {
+                                      suggestions = [];
+                                      isSearching = false;
+                                    });
+                                  }
                                 } else {
-                                  setDialogState(() {
-                                    suggestions = [];
-                                    isSearching = false;
-                                  });
+                                  setDialogState(() => suggestions = []);
                                 }
-                              } catch (_) {
-                                setDialogState(() {
-                                  suggestions = [];
-                                  isSearching = false;
-                                });
-                              }
-                            } else {
-                              setDialogState(() => suggestions = []);
-                            }
-                          },
-                        ),
-                        if (suggestions.isNotEmpty) ...[
-                          const SizedBox(height: 18),
-                          Container(
-                            constraints: const BoxConstraints(maxHeight: 150),
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: suggestions.length,
-                              itemBuilder: (context, index) {
-                                final loc = suggestions[index];
-                                final cityName = loc['city'] as String;
-                                final countryName = loc['country'] as String;
-                                return ListTile(
-                                  dense: true,
-                                  leading: const Icon(
-                                    Icons.location_on,
-                                    color: Colors.white54,
-                                    size: 20,
-                                  ),
-                                  title: Text(
-                                    '$cityName، $countryName',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  onTap: () async {
-                                    Navigator.pop(context);
-                                    final lat = loc['lat'] as double;
-                                    final lon = loc['lon'] as double;
-                                    // Save location and names
-                                    final prefs =
-                                        await SharedPreferences.getInstance();
-                                    await prefs.setDouble('last_latitude', lat);
-                                    await prefs.setDouble('last_longitude', lon);
-                                    await prefs.setString('country_name', countryName);
-                                    await prefs.setString('city_name', cityName);
-
-                                    _updateLocation(countryName, cityName);
-                                    ref
-                                        .read(prayerTimesProvider.notifier)
-                                        .fetchPrayerTimes(lat: lat, lng: lon);
-                                  },
-                                );
                               },
                             ),
-                          ),
-                        ],
-                        const SizedBox(height: 72),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _loadLocation();
-                          },
-                          icon: const Icon(Icons.my_location),
-                          label: const Text(
-                            'استخدم GPS',
-                            style: TextStyle(fontFamily: 'Cairo'),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(
-                              255,
-                              255,
-                              255,
-                              255,
+                            if (suggestions.isNotEmpty) ...[
+                              const SizedBox(height: 18),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 200),
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: suggestions.length,
+                                  itemBuilder: (context, index) {
+                                    final loc = suggestions[index];
+                                    final cityName = loc['city'] as String;
+                                    final countryName = loc['country'] as String;
+                                    return ListTile(
+                                      dense: true,
+                                      leading: const Icon(
+                                        Icons.location_on,
+                                        color: Colors.white54,
+                                        size: 20,
+                                      ),
+                                      title: Text(
+                                        '$cityName، $countryName',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      onTap: () async {
+                                        Navigator.pop(context);
+                                        final lat = loc['lat'] as double;
+                                        final lon = loc['lon'] as double;
+                                        // Save location and names
+                                        final prefs =
+                                            await SharedPreferences.getInstance();
+                                        await prefs.setDouble('last_latitude', lat);
+                                        await prefs.setDouble('last_longitude', lon);
+                                        await prefs.setString('country_name', countryName);
+                                        await prefs.setString('city_name', cityName);
+
+                                        _updateLocation(countryName, cityName);
+                                        ref
+                                            .read(prayerTimesProvider.notifier)
+                                            .fetchPrayerTimes(lat: lat, lng: lon);
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _loadLocation();
+                              },
+                              icon: const Icon(Icons.my_location),
+                              label: const Text(
+                                'استخدم GPS',
+                                style: TextStyle(fontFamily: 'Cairo'),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color.fromARGB(
+                                  255,
+                                  255,
+                                  255,
+                                  255,
+                                ),
+                                foregroundColor: Color(0xff0E2031),
+                              ),
                             ),
-                            foregroundColor: Color(0xff0E2031),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                   actions: [
