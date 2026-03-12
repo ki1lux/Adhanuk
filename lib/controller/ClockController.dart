@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:myadhan/model/clockModel.dart';
+import 'package:myadhan/model/ClockModel.dart';
 
 class ClockController {
   Timer? _timer;

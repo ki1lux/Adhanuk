@@ -76,14 +76,14 @@ class _AnalogclockviewState extends State<Analogclockview> {
             MediaQuery.sizeOf(context).width,
           ),
         ),
-        SizedBox(height: 50),
+        SizedBox(height: MediaQuery.sizeOf(context).height * 0.05),
         Text(
           "$timeAfterReform",
           style: TextStyle(
             fontFamily: 'cairo',
             decoration: TextDecoration.none,
             color: Color(0xffF0F8FF),
-            fontSize: 50,
+            fontSize: MediaQuery.sizeOf(context).width * 0.12,
             fontWeight: FontWeight.bold,
           ),
         ),

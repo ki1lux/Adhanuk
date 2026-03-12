@@ -38,56 +38,65 @@ class _adhanScreen extends ConsumerState<AdhanScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,  // Black icons on Android
-        statusBarBrightness: Brightness.light,      // Black icons on iOS
+        statusBarIconBrightness: Brightness.dark, // Black icons on Android
+        statusBarBrightness: Brightness.light, // Black icons on iOS
       ),
       child: Scaffold(
         body: Stack(
-        children: [
-          Container(color: Color(0xff0A2239)),
-          SvgPicture.asset(
-            'assets/Vector.svg',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
-          Positioned(
-            top: -200,
-            left: -100,
-            right: -100,
-            child: Container(
-              height: 600,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF0F8FF),
-                shape: BoxShape.circle,
+          children: [
+            Container(color: Color(0xff0A2239)),
+            SvgPicture.asset(
+              'assets/Vector.svg',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+            Positioned(
+              top: -(MediaQuery.sizeOf(context).height * 0.05),
+              left: 0,
+              right: 0,
+              child: Container(
+                height: MediaQuery.sizeOf(context).height * 0.50,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF0F8FF),
+                  shape: BoxShape.rectangle,
+                  borderRadius: BorderRadius.only(
+                    bottomRight: Radius.circular(70),
+                    bottomLeft: Radius.circular(70),
+                  ),
+                ),
               ),
             ),
-          ),
-          Positioned(child: Analogclockview()),
-
-          Positioned(
-            top: 550,
-            left: 0,
-            right: 0,
-            child: prayerTimesAsync.when(
-              loading: () => _buildHijriText(_cachedHijri),
-              error: (_, __) => _buildHijriText(_cachedHijri),
-              data: (data) {
-                // Update local memory cache so UI doesn't jump on next rebuild
-                if (data.dateOnHijri.isNotEmpty && data.dateOnHijri != _cachedHijri) {
-                  // We schedule the setState for next frame to avoid "setState during build" errors
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      setState(() => _cachedHijri = data.dateOnHijri);
-                    }
-                  });
-                }
-                return _buildHijriText(data.dateOnHijri);
-              },
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  const Analogclockview(),
+                  SizedBox(height: MediaQuery.sizeOf(context).height * 0.01),
+                  prayerTimesAsync.when(
+                    loading: () => _buildHijriText(_cachedHijri),
+                    error: (_, __) => _buildHijriText(_cachedHijri),
+                    data: (data) {
+                      // Update local memory cache so UI doesn't jump on next rebuild
+                      if (data.dateOnHijri.isNotEmpty &&
+                          data.dateOnHijri != _cachedHijri) {
+                        // We schedule the setState for next frame to avoid "setState during build" errors
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() => _cachedHijri = data.dateOnHijri);
+                          }
+                        });
+                      }
+                      return _buildHijriText(data.dateOnHijri);
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

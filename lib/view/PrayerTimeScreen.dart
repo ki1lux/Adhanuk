@@ -242,7 +242,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
           Column(
             children: [
               _buildLocationHeader(),
-              const SizedBox(height: 64),
+              SizedBox(height: MediaQuery.sizeOf(context).height * 0.05),
               ...prayers.asMap().entries.map(
                 (e) => _buildPrayerCard(
                   e.value.name,
@@ -260,7 +260,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
 
   Widget _buildLocationHeader() {
     return Padding(
-      padding: const EdgeInsets.only(right: 16, left: 48, top: 89),
+      padding: EdgeInsets.only(right: 16, left: 48, top: MediaQuery.sizeOf(context).height * 0.1),
       child: InkWell(
         onTap: _showLocationDialog,
         borderRadius: BorderRadius.circular(12),
@@ -327,10 +327,30 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
     List<Map<String, dynamic>> suggestions = [];
     bool isSearching = false;
 
-    showDialog(
+    showGeneralDialog(
       context: context,
-      builder:
-          (context) => StatefulBuilder(
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      transitionBuilder: (context, primaryAnimation, secondaryAnimation, child) {
+        final curve = CurvedAnimation(
+          parent: primaryAnimation,
+          curve: Curves.easeInOutCubic,
+        );
+        final scaleAnimation = Tween<double>(
+          begin: 0.85,
+          end: 1.0,
+        ).animate(curve);
+        return ScaleTransition(
+          scale: scaleAnimation,
+          child: FadeTransition(
+            opacity: curve,
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (context, animation, secondaryAnimation) => StatefulBuilder(
             builder:
                 (context, setDialogState) => AlertDialog(
                   backgroundColor: const Color(0xFF0E2031),
@@ -594,100 +614,26 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
   }
 
   Widget _buildPrayerCard(String name, String time, bool isNext) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18, right: 12, left: 12),
-      child: InkWell(
-        onTap: () => _showSoundDialog(name),
-        borderRadius: BorderRadius.circular(36),
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(36),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
-            child: Container(
-              height: 76,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(36),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    FutureBuilder<bool>(
-                      future: _isAdhanEnabled(name),
-                      builder: (context, snapshot) {
-                        final enabled = snapshot.data ?? true;
-                        return GestureDetector(
-                          onTap: () async {
-                            final prefs = await SharedPreferences.getInstance();
-                            final newVal = !enabled;
-                            await prefs.setBool('adhan_enabled_$name', newVal);
-                            setState(() {}); // Refresh icon
-
-                            // Reschedule alarms with new setting
-                            final prayerTimesAsync = ref.read(prayerTimesProvider);
-                            if (prayerTimesAsync.hasValue) {
-                              await PrayerAlarmScheduler.scheduleAllPrayersWithData(
-                                prayerTimesAsync.value!,
-                              );
-                            }
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Icon(
-                              enabled ? Icons.volume_up : Icons.volume_off,
-                              color: enabled
-                                  ? const Color(0xffF0F8FF)
-                                  : Colors.white38,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    if (isNext)
-                      CountdownTimer(onFinish: () => setState(() {}))
-                    else
-                      const SizedBox.shrink(),
-                    const SizedBox(width: 64),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            name,
-                            style: const TextStyle(
-                              fontFamily: 'Cairo',
-                              color: Color(0xffF0F8FF),
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            time,
-                            style: const TextStyle(
-                              fontFamily: 'Cairo',
-                              color: Color(0xffF0F8FF),
-                              fontWeight: FontWeight.w100,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return _AnimatedPrayerCard(
+      name: name,
+      time: time,
+      isNext: isNext,
+      isAdhanEnabledFuture: _isAdhanEnabled(name),
+      onSoundTap: () => _showSoundDialog(name),
+      onToggleAdhan: (enabled) async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('adhan_enabled_$name', enabled);
+        setState(() {}); // Refresh parent list
+        final prayerTimesAsync = ref.read(prayerTimesProvider);
+        if (prayerTimesAsync.hasValue) {
+          await PrayerAlarmScheduler.scheduleAllPrayersWithData(
+            prayerTimesAsync.value!,
+          );
+        }
+      },
     );
   }
+
 
   Future<bool> _isAdhanEnabled(String prayerName) async {
     final prefs = await SharedPreferences.getInstance();
@@ -706,14 +652,30 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
     // Available sounds - add more as you add mp3 files
     final sounds = [
       {'id': 'adhan1', 'name': 'الأذان الأول'},
-      {'id': 'adhan2', 'name': 'أذان مكة'},
-      {'id': 'adhan3', 'name': 'أذان المدينة'},
+      {'id': 'adhan2', 'name': 'أذان الثاني'},
+      {'id': 'adhan3', 'name': 'أذان الثالث'},
     ];
 
-    showDialog(
+    showGeneralDialog(
       context: context,
-      builder:
-          (context) => StatefulBuilder(
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      transitionBuilder: (context, primaryAnimation, secondaryAnimation, child) {
+        final curve = CurvedAnimation(
+          parent: primaryAnimation,
+          curve: Curves.easeInOutCubic,
+        );
+        return ScaleTransition(
+          scale: Tween<double>(begin: 0.85, end: 1.0).animate(curve),
+          child: FadeTransition(
+            opacity: curve,
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (context, animation, secondaryAnimation) => StatefulBuilder(
             builder:
                 (context, setDialogState) => AlertDialog(
                   backgroundColor: const Color(0xFF0E2031),
@@ -744,7 +706,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                             textAlign: TextAlign.right,
                           ),
                           value: isEnabled,
-                          activeColor: const Color(0xFF0768C5),
+                          activeColor: const Color(0xFF4DB3E5),
                           onChanged: (value) {
                             setDialogState(() => isEnabled = value);
                           },
@@ -775,7 +737,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                                 playingSound == sound['id']
                                     ? Icons.stop_circle_outlined
                                     : Icons.play_circle_outline,
-                                color: const Color(0xFF0768C5),
+                                color: const Color(0xFFF0F8FF),
                               ),
                               onPressed: () async {
                                 if (playingSound == sound['id']) {
@@ -793,7 +755,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                             ),
                             value: sound['id']!,
                             groupValue: selectedSound,
-                            activeColor: const Color(0xFF0768C5),
+                            activeColor: const Color(0xFF4DB3E5),
                             onChanged:
                                 isEnabled
                                     ? (value) {
@@ -857,5 +819,124 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
       audioPlayer.stop();
       audioPlayer.dispose();
     });
+  }
+}
+
+class _AnimatedPrayerCard extends StatefulWidget {
+  final String name;
+  final String time;
+  final bool isNext;
+  final Future<bool> isAdhanEnabledFuture;
+  final VoidCallback onSoundTap;
+  final ValueChanged<bool> onToggleAdhan;
+
+  const _AnimatedPrayerCard({
+    required this.name,
+    required this.time,
+    required this.isNext,
+    required this.isAdhanEnabledFuture,
+    required this.onSoundTap,
+    required this.onToggleAdhan,
+  });
+
+  @override
+  State<_AnimatedPrayerCard> createState() => _AnimatedPrayerCardState();
+}
+
+class _AnimatedPrayerCardState extends State<_AnimatedPrayerCard> {
+  bool isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18, right: 12, left: 12),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => isPressed = true),
+        onTapUp: (_) {
+          setState(() => isPressed = false);
+          widget.onSoundTap();
+        },
+        onTapCancel: () => setState(() => isPressed = false),
+        child: AnimatedScale(
+          scale: isPressed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+          child: AnimatedOpacity(
+            opacity: isPressed ? 0.7 : 1.0,
+            duration: const Duration(milliseconds: 150),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(36),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(36),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        FutureBuilder<bool>(
+                          future: widget.isAdhanEnabledFuture,
+                          builder: (context, snapshot) {
+                            final enabled = snapshot.data ?? true;
+                            return GestureDetector(
+                              onTap: () => widget.onToggleAdhan(!enabled),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  enabled ? Icons.volume_up : Icons.volume_off,
+                                  color: enabled
+                                      ? const Color(0xffF0F8FF)
+                                      : Colors.white38,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        if (widget.isNext)
+                          CountdownTimer(onFinish: () => setState(() {}))
+                        else
+                          const SizedBox.shrink(),
+                        const SizedBox(width: 64),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                widget.name,
+                                style: const TextStyle(
+                                  fontFamily: 'Cairo',
+                                  color: Color(0xffF0F8FF),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.time,
+                                style: const TextStyle(
+                                  fontFamily: 'Cairo',
+                                  color: Color(0xffF0F8FF),
+                                  fontWeight: FontWeight.w100,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
