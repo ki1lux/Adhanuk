@@ -185,14 +185,27 @@ class PrayerUpdateWorker(
     }
 
     /**
-     * Flutter's SharedPreferences stores doubles as longs via Double.doubleToRawLongBits().
-     * We must decode them the same way.
+     * Flutter's SharedPreferences stores doubles as Strings with a specific prefix
+     * in newer versions (2.4.15+), or as raw long bits in older versions.
      */
     private fun getDouble(prefs: SharedPreferences, key: String): Double? {
+        if (!prefs.contains(key)) return null
+
+        // Try the new String format first (prefix: "VGhpcyBpcyB0aGUgcHJlZml4IGZvciBEb3VibGUu")
+        try {
+            val strVal = prefs.getString(key, null)
+            if (strVal != null && strVal.startsWith("VGhpcyBpcyB0aGUgcHJlZml4IGZvciBEb3VibGUu")) {
+                val numStr = strVal.removePrefix("VGhpcyBpcyB0aGUgcHJlZml4IGZvciBEb3VibGUu")
+                return numStr.toDoubleOrNull()
+            }
+        } catch (e: ClassCastException) {
+            // It's not a String, fallback to the old Long format below
+        }
+
+        // Try the old Long format (raw bits)
         return try {
-            if (!prefs.contains(key)) return null
             val raw = prefs.getLong(key, 0L)
-            java.lang.Double.longBitsToDouble(raw)
+            if (raw == 0L) null else java.lang.Double.longBitsToDouble(raw)
         } catch (e: Exception) {
             // Fallback: try reading as float (shouldn't happen, but defensive)
             try {

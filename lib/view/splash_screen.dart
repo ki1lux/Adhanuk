@@ -11,18 +11,18 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
 
-  // ── Card (white rounded square) ─────────────────────────────
+  //  Card 
   late final AnimationController _cardCtrl;
   late final Animation<double> _cardScale;
   late final Animation<double> _cardFade;
 
-  // ── Your icon inside the card ────────────────────────────────
+  //  icon
   late final AnimationController _iconCtrl;
   late final Animation<double> _iconFade;
   late final Animation<double> _iconScale;
   late final Animation<Offset> _iconSlide;
 
-  // ── Glow pulse ───────────────────────────────────────────────
+  //  Glow pulse 
   late final AnimationController _glowCtrl;
   late final Animation<double> _glowAnim;
 
@@ -30,14 +30,14 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // 1. Card: elastic pop
+    // Card
     _cardCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
     _cardScale = Tween(begin: 0.25, end: 1.0).animate(
       CurvedAnimation(parent: _cardCtrl, curve: Curves.elasticOut));
     _cardFade = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _cardCtrl, curve: const Interval(0.0, 0.35, curve: Curves.easeIn)));
 
-    // 2. Icon: fade + scale + slide up
+    // Icon
     _iconCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     _iconFade = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _iconCtrl, curve: Curves.easeOut));
@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen>
     _iconSlide = Tween(begin: const Offset(0, 0.25), end: Offset.zero).animate(
       CurvedAnimation(parent: _iconCtrl, curve: Curves.easeOut));
 
-    // 3. Glow: breathing pulse
+    //  Glow
     _glowCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800));
     _glowAnim = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut));
@@ -108,7 +108,7 @@ class _SplashScreenState extends State<SplashScreen>
                     alignment: Alignment.center,
                     children: [
 
-                      // ── Glow halo ──
+                      // Glow
                       Container(
                         width: 178, height: 178,
                         decoration: BoxDecoration(
@@ -121,7 +121,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
 
-                      // ── White rounded card ──
+                      // White rounded card
                       Container(
                         width: 160, height: 160,
                         decoration: BoxDecoration(
@@ -134,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen>
                           )],
                         ),
 
-                        // ✅ YOUR actual icon file — animated
+                        // icon file — animated
                         child: FadeTransition(
                           opacity: _iconFade,
                           child: ScaleTransition(
@@ -144,7 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                               child: Padding(
                                 padding: const EdgeInsets.all(28),
                                 child: Image.asset(
-                                  'assets/mainIcon.png', // 👈 your icon path here
+                                  'assets/mainIcon.png', 
                                   fit: BoxFit.contain,
                                 ),
                               ),

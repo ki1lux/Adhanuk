@@ -40,18 +40,48 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp> {
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   final _notificationsPlugin = FlutterLocalNotificationsPlugin();
   bool _notificationsScheduled = false;
+  String _lastFetchDate = '';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _lastFetchDate = _todayString();
     _initNotificationsSync();
     // Wait for widget tree to be built before requesting permissions
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestPermissions();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Detect when the app resumes from the background.
+  /// If the date has changed (e.g. midnight crossed while backgrounded),
+  /// re-fetch prayer times so the Hijri date updates immediately.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final today = _todayString();
+      if (today != _lastFetchDate) {
+        debugPrint('📅 Date changed ($today != $_lastFetchDate) — refreshing prayer times');
+        _lastFetchDate = today;
+        ref.read(prayerTimesProvider.notifier).fetchPrayerTimes();
+      }
+    }
+  }
+
+  /// Returns today's date as "yyyy-MM-dd".
+  String _todayString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
   void _initNotificationsSync() {

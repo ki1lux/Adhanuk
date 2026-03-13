@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myadhan/controller/LocationController.dart';
 import 'package:myadhan/model/PrayerTimeModel.dart';
@@ -18,9 +20,34 @@ final locationControllerProvider = Provider<LocationController>((ref) {
 class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
   final PrayerTimesApiService _apiService;
   final LocationController _locationController;
+  Timer? _midnightTimer;
 
   PrayerTimesNotifier(this._apiService, this._locationController)
       : super(const AsyncValue.loading());
+
+  /// Schedule a refresh at the next midnight (+ 5s buffer) so the Hijri date
+  /// and prayer times update automatically without an app restart.
+  void scheduleMidnightRefresh() {
+    _midnightTimer?.cancel();
+
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    // Add a 5-second buffer to ensure the date has fully rolled over
+    final delay = nextMidnight.difference(now) + const Duration(seconds: 5);
+
+    print('🕛 Midnight refresh scheduled in ${delay.inSeconds}s');
+
+    _midnightTimer = Timer(delay, () {
+      print('🕛 Midnight reached — refreshing prayer times & Hijri date');
+      fetchPrayerTimes();
+    });
+  }
+
+  @override
+  void dispose() {
+    _midnightTimer?.cancel();
+    super.dispose();
+  }
   // Note: fetchPrayerTimes() is called from main.dart after permissions are granted
 
   /// Parses time string "HH:mm" or "HH:mm (TZ)" to DateTime for today
@@ -108,6 +135,9 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
       await prefs.setString('cached_hijri_date', model.dateOnHijri);
 
       state = AsyncValue.data(model);
+
+      // Re-schedule the next midnight refresh
+      scheduleMidnightRefresh();
     } catch (e, st) {
       print('❌ Error fetching prayer times: $e');
       state = AsyncValue.error(e, st);
