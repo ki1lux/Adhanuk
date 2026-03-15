@@ -178,7 +178,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                             fontSize: 28,
                             fontFamily: 'cairo',
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xff0A2239),
+                            color: const Color(0xFFF0F8FF),
                           ),
                         ),
                       ),
