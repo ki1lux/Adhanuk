@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -16,6 +15,17 @@ class _QiblaScreenState extends State<QiblaScreen> {
   bool _loading = true;
   double _lastDirection = 0;
   int _lastHapticTime = 0;
+  bool _wasPointingToQibla = false;
+  
+  double _lastCompassTurns = 0.0;
+  double _lastQiblaTurns = 0.0;
+
+  double _getShortestTurns(double oldTurns, double newTurns) {
+    double difference = newTurns - oldTurns;
+    while (difference < -0.5) difference += 1.0;
+    while (difference > 0.5) difference -= 1.0;
+    return oldTurns + difference;
+  }
 
   @override
   void initState() {
@@ -141,6 +151,23 @@ class _QiblaScreenState extends State<QiblaScreen> {
                 final qiblahDirection = snapshot.data;
                 final double screenWidth = MediaQuery.of(context).size.width;
 
+                final double rawDirectionTurns = ((qiblahDirection.direction ?? 0) * -1) / 360.0;
+                _lastCompassTurns = _getShortestTurns(_lastCompassTurns, rawDirectionTurns);
+
+                final double rawQiblaTurns = ((qiblahDirection.qiblah ?? 0) * -1) / 360.0;
+                _lastQiblaTurns = _getShortestTurns(_lastQiblaTurns, rawQiblaTurns);
+
+                final double qiblahAngle = qiblahDirection.qiblah ?? 0;
+                final double normalizedQiblah = qiblahAngle % 360;
+                final bool isPointingToQibla = (normalizedQiblah < 5 || normalizedQiblah > 355) || (normalizedQiblah > -5 && normalizedQiblah <= 0);
+
+                if (isPointingToQibla && !_wasPointingToQibla) {
+                  HapticFeedback.heavyImpact();
+                  _wasPointingToQibla = true;
+                } else if (!isPointingToQibla && _wasPointingToQibla) {
+                  _wasPointingToQibla = false;
+                }
+
                 // Haptic feedback when compass rotates significantly
                 final double currentDir = (qiblahDirection.direction ?? 0).toDouble();
                 final int now = DateTime.now().millisecondsSinceEpoch;
@@ -155,16 +182,16 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Transform.rotate(
-                        angle:
-                            ((qiblahDirection.direction ?? 0) *
-                                (pi / 180) *
-                                -1),
+                      AnimatedRotation(
+                        turns: _lastCompassTurns,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
                         child: SvgPicture.asset("assets/test.svg"),
                       ),
-                      Transform.rotate(
-                        angle:
-                            ((qiblahDirection.qiblah ?? 0) * (pi / 180) * -1),
+                      AnimatedRotation(
+                        turns: _lastQiblaTurns,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
                         child: SvgPicture.asset("assets/ka3baInCompass.svg"),
                       ),
                       Align(
@@ -172,14 +199,29 @@ class _QiblaScreenState extends State<QiblaScreen> {
                         child: SvgPicture.asset("assets/arrow.svg"),
                       ),
                       Center(
-                        child: Text(
-                          " ${qiblahDirection.direction.toStringAsFixed(0)}°",
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontFamily: 'cairo',
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xff0A2239),
-                          ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              " ${qiblahDirection.direction.toStringAsFixed(0)}°",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontFamily: 'cairo',
+                                fontWeight: FontWeight.bold,
+                                color: isPointingToQibla ? Colors.green : const Color(0xff0A2239),
+                              ),
+                            ),
+                            if (isPointingToQibla)
+                              const Text(
+                                "في اتجاه القبلة",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'cairo',
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -195,10 +237,24 @@ class _QiblaScreenState extends State<QiblaScreen> {
             right: 0,
             child: Center(
               child: ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   setState(() {
                     _loading = true;
                   });
+                  await Future.delayed(const Duration(milliseconds: 600));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'تم إعادة التهيئة بنجاح.',
+                          style: TextStyle(fontFamily: 'Cairo'),
+                          textAlign: TextAlign.center,
+                        ),
+                        duration: Duration(seconds: 3),
+                        backgroundColor: Color(0xff0A2239),
+                      ),
+                    );
+                  }
                   _checkPermission();
                 },
                 icon: const Icon(Icons.compass_calibration, size: 20),
