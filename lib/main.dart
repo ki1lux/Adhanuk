@@ -151,6 +151,19 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   int _selectedIndex = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _selectedIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   static final _pages = <Widget>[
     AdhanScreen(),
@@ -163,17 +176,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 350),
-        switchInCurve: Curves.easeInOut,
-        switchOutCurve: Curves.easeInOut,
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child: KeyedSubtree(
-          key: ValueKey<int>(_selectedIndex),
-          child: _pages[_selectedIndex],
-        ),
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: _pages,
       ),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -210,16 +216,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget _buildNavItem(String asset, int index) {
     final isSelected = _selectedIndex == index;
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          hoverColor: Colors.transparent,
-          onTap: () {
-            setState(() => _selectedIndex = index);
-          },
-          child: AnimatedContainer(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          setState(() => _selectedIndex = index);
+          _pageController.jumpToPage(index);
+        },
+        child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             height: double.infinity,
             padding: const EdgeInsets.all(18),
@@ -250,7 +253,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               ),
             ),
           ),
-        ),
       ),
     );
   }
