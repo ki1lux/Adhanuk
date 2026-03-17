@@ -48,6 +48,7 @@ dependencies:
   flutter_native_splash: ^2.4.7
   audioplayers: ^6.6.0
   image: ^4.8.0
+  just_audio: ^0.10.5
 
   
 
@@ -103,6 +104,7 @@ flutter:
     - assets/settingsIcon.svg
     - assets/mainIcon.png
     - assets/audio/
+    - assets/audio/effects/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
