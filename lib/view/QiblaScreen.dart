@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:myadhan/controller/QiblahController.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:flutter_qiblah/flutter_qiblah.dart';
 
 class QiblaScreen extends StatefulWidget {
   @override
@@ -14,6 +15,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   bool _hasPermission = false;
   bool _loading = true;
+  bool _isCompassSupported = true;
   double _lastDirection = 0;
   int _lastHapticTime = 0;
   bool _wasPointingToQibla = false;
@@ -101,27 +103,40 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   Future<void> _checkPermission() async {
-    // 1. Check if we already have permission
+    // 1. Check if compass is supported (Android specific check, returns true on iOS)
+    final bool? isSupported = await FlutterQiblah.androidDeviceSensorSupport();
+    if (isSupported == false) {
+      if (mounted) {
+        setState(() {
+          _isCompassSupported = false;
+          _loading = false;
+        });
+      }
+      return;
+    }
+
+    // 2. Check if we already have permission
     bool granted = await _controller.hasPermission();
 
     if (!granted) {
       try {
-        // 2. UNCOMMENT this line to show the popup
+        // 3. UNCOMMENT this line to show the popup
         // We wrap it in try-catch to stop the crash if it's called twice
         await _controller.init();
 
-        // 3. Check again after the user clicks Allow/Deny
+        // 4. Check again after the user clicks Allow/Deny
         granted = await _controller.hasPermission();
       } catch (e) {
-        // 4. If the error "Already requesting" happens, we ignore it safely.
+        // 5. If the error "Already requesting" happens, we ignore it safely.
         print("Popup is already open: $e");
       }
     }
 
-    // 5. Update the UI
+    // 6. Update the UI
     if (mounted) {
       setState(() {
         _hasPermission = granted;
+        _isCompassSupported = true;
         _loading = false;
       });
     }
@@ -146,17 +161,31 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _checkPermission,
-                icon: const Icon(Icons.refresh),
-                label: const Text(
-                  'إعادة المحاولة',
-                  style: TextStyle(fontFamily: 'Cairo'),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white24,
-                  foregroundColor: Colors.white,
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!_isCompassSupported) {
+      return Scaffold(
+        backgroundColor: const Color(0xff0A2239),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white54, size: 64),
+              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  "جهازك لا يحتوي على مستشعر البوصلة",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontFamily: 'Cairo',
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
@@ -274,6 +303,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
                   return SizedBox(
                     height: screenWidth + 75,
+                    width: screenWidth -32,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
