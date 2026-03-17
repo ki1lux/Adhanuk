@@ -16,13 +16,14 @@ class CountdownTimer extends ConsumerStatefulWidget {
 }
 
 class _CountdownTimerState extends ConsumerState<CountdownTimer> {
-  static const _iqamaDelay = Duration(minutes: 1);
+  static const _defaultIqamaDelay = Duration(minutes: 15);
+  static const _maghribIqamaDelay = Duration(minutes: 5);
   static const _textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 16);
 
   final _controller = PrayerTimeController();
   Timer? _timer;
   Duration _remaining = Duration.zero;
-  Duration _countUp = Duration.zero;
+  Duration _iqamaRemaining = Duration.zero;
   bool _isAdhanPhase = true;
   String? _lastPlayedPrayer;
   DateTime? _targetTime;
@@ -56,7 +57,7 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
     _targetTime = _getNextPrayerTime(next.time, now);
     _isAdhanPhase = true;
     _iqamaStartTime = null;
-    _countUp = Duration.zero;
+    _iqamaRemaining = Duration.zero; // Reset to zero for counting up
     _updateRemaining();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -74,15 +75,21 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
     }
   }
 
+  Duration _getIqamaDelay(String? prayerName) {
+    return prayerName == 'المغرب' ? _maghribIqamaDelay : _defaultIqamaDelay;
+  }
+
   void _handlePhaseTransition() {
     if (_isAdhanPhase && _remaining.inSeconds <= 0 && _lastPlayedPrayer != _nextPrayerName) {
       _isAdhanPhase = false;
       _lastPlayedPrayer = _nextPrayerName;
       _iqamaStartTime = DateTime.now();
-      _countUp = Duration.zero;
+      _iqamaRemaining = Duration.zero; // Start at zero
     } else if (!_isAdhanPhase && _iqamaStartTime != null) {
-      _countUp = DateTime.now().difference(_iqamaStartTime!);
-      if (_countUp >= _iqamaDelay) {
+      final delay = _getIqamaDelay(_lastPlayedPrayer);
+      final elapsed = DateTime.now().difference(_iqamaStartTime!);
+      _iqamaRemaining = elapsed; // Count up: just use the elapsed time
+      if (elapsed >= delay) {
         _timer?.cancel();
         widget.onFinish();
         ref.read(prayerTimesProvider).whenData(_startCountdown);
@@ -117,7 +124,7 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
           WidgetsBinding.instance.addPostFrameCallback((_) => _startCountdown(data));
         }
         return Text(
-          _formatDuration(_isAdhanPhase ? _remaining : _countUp),
+          _formatDuration(_isAdhanPhase ? _remaining : _iqamaRemaining),
           style: _textStyle.copyWith(color: _isAdhanPhase ? const Color(0xffF0F8FF) : Colors.red),
         );
       },

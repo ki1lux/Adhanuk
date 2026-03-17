@@ -5,13 +5,21 @@ import 'package:myadhan/controller/QiblahController.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter_qiblah/flutter_qiblah.dart';
 
+import 'dart:async';
+
 class QiblaScreen extends StatefulWidget {
+  final bool isActive;
+  
+  const QiblaScreen({Key? key, this.isActive = true}) : super(key: key);
+
   @override
   _QiblaScreenState createState() => _QiblaScreenState();
 }
 
 class _QiblaScreenState extends State<QiblaScreen> {
   final QiblahController _controller = QiblahController();
+  StreamSubscription? _compassSubscription;
+  QiblahDirection? _qiblahDirection;
 
   bool _hasPermission = false;
   bool _loading = true;
@@ -43,7 +51,35 @@ class _QiblaScreenState extends State<QiblaScreen> {
     super.initState();
     _initAudioPlayer();
     _checkPermission();
-    _startAudioTickListener();
+  }
+
+  @override
+  void didUpdateWidget(QiblaScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive && _hasPermission && _isCompassSupported) {
+      _startCompass();
+    } else if (!widget.isActive && oldWidget.isActive) {
+      _stopCompass();
+    }
+  }
+
+  void _startCompass() {
+    if (_compassSubscription == null) {
+      _compassSubscription = _controller.getQiblaStream().listen((data) {
+        if (!mounted) return;
+        
+        setState(() {
+          _qiblahDirection = data as QiblahDirection;
+        });
+        
+        _processCompassAudio(data);
+      });
+    }
+  }
+
+  void _stopCompass() {
+    _compassSubscription?.cancel();
+    _compassSubscription = null;
   }
 
   Future<void> _initAudioPlayer() async {
@@ -53,10 +89,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
     );
   }
 
-  void _startAudioTickListener() {
-    _controller.getQiblaStream().listen((qiblahDirection) async {
-      if (qiblahDirection == null || qiblahDirection.direction == null) return;
-      final double currentDir = qiblahDirection.direction!.toDouble();
+  void _processCompassAudio(QiblahDirection qiblahDirection) async {
+    final double currentDir = qiblahDirection.direction.toDouble();
 
       // Calculate current 90-degree quadrant (0..3)
       // We divide by 90 to get quadrant 0(0-89), 1(90-179), 2(180-269), 3(270-359).
@@ -92,11 +126,11 @@ class _QiblaScreenState extends State<QiblaScreen> {
           _isPlayingTick = false;
         }
       }
-    });
   }
 
   @override
   void dispose() {
+    _stopCompass();
     _audioPlayer.dispose();
     _bigAudioPlayer.dispose();
     super.dispose();
@@ -139,6 +173,11 @@ class _QiblaScreenState extends State<QiblaScreen> {
         _isCompassSupported = true;
         _loading = false;
       });
+      
+      // Start compass only if we have permission, it's supported, and screen is active
+      if (_hasPermission && widget.isActive) {
+        _startCompass();
+      }
     }
   }
 
@@ -251,31 +290,30 @@ class _QiblaScreenState extends State<QiblaScreen> {
               height: double.infinity,
             ),
             Center(
-              child: StreamBuilder(
-                stream: _controller.getQiblaStream(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
+              child: Builder(
+                builder: (context) {
+                  if (_qiblahDirection == null) {
                     return Center(child: CircularProgressIndicator());
                   }
 
-                  final qiblahDirection = snapshot.data;
+                  final qiblahDirection = _qiblahDirection!;
                   final double screenWidth = MediaQuery.of(context).size.width;
 
                   final double rawDirectionTurns =
-                      ((qiblahDirection.direction ?? 0) * -1) / 360.0;
+                      (qiblahDirection.direction * -1) / 360.0;
                   _lastCompassTurns = _getShortestTurns(
                     _lastCompassTurns,
                     rawDirectionTurns,
                   );
 
                   final double rawQiblaTurns =
-                      ((qiblahDirection.qiblah ?? 0) * -1) / 360.0;
+                      (qiblahDirection.qiblah * -1) / 360.0;
                   _lastQiblaTurns = _getShortestTurns(
                     _lastQiblaTurns,
                     rawQiblaTurns,
                   );
 
-                  final double qiblahAngle = qiblahDirection.qiblah ?? 0;
+                  final double qiblahAngle = qiblahDirection.qiblah;
                   final double normalizedQiblah = qiblahAngle % 360;
                   final bool isPointingToQibla =
                       (normalizedQiblah < 5 || normalizedQiblah > 355) ||
@@ -290,7 +328,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
                   // Haptic feedback when compass rotates significantly
                   final double currentDir =
-                      (qiblahDirection.direction ?? 0).toDouble();
+                      qiblahDirection.direction.toDouble();
                   final int now = DateTime.now().millisecondsSinceEpoch;
 
                   // Haptic feedback every 1 degree slightly
