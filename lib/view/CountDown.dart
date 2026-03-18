@@ -50,14 +50,41 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
 
     final now = DateTime.now();
     final nextIndex = _findNextPrayerIndex(prayers, now);
-    final next = prayers[nextIndex];
     
-    _nextPrayerName = next.name;
-    _prayerTime = DateFormat('HH:mm').format(next.time);
-    _targetTime = _getNextPrayerTime(next.time, now);
-    _isAdhanPhase = true;
-    _iqamaStartTime = null;
-    _iqamaRemaining = Duration.zero; // Reset to zero for counting up
+    // First, let's check if we are currently IN an Iqamah phase
+    final previousIndex = (nextIndex - 1 + prayers.length) % prayers.length;
+    final previous = prayers[previousIndex];
+    // We need to know previous prayer's actual time for *today* 
+    // (or yesterday if Fajr next and Isha was yesterday)
+    DateTime previousTimeCandidate = DateTime(now.year, now.month, now.day, previous.time.hour, previous.time.minute);
+    if (previousTimeCandidate.isAfter(now)) {
+       previousTimeCandidate = previousTimeCandidate.subtract(const Duration(days: 1));
+    }
+
+    final delayForPrevious = _getIqamaDelay(previous.name);
+    final elapsedSincePrevious = now.difference(previousTimeCandidate);
+
+    if (elapsedSincePrevious >= Duration.zero && elapsedSincePrevious < delayForPrevious) {
+      // WE ARE IN THE IQAMAH PHASE!
+      _isAdhanPhase = false;
+      _lastPlayedPrayer = previous.name;
+      _nextPrayerName = prayers[(previousIndex + 1) % prayers.length].name;
+      _iqamaStartTime = previousTimeCandidate;
+      _iqamaRemaining = elapsedSincePrevious; 
+      // Keep target time as the previous one just so _remaining isn't null, 
+      // though _remaining isn't shown during Iqamah phase.
+      _targetTime = previousTimeCandidate; 
+    } else {
+      // WE ARE IN NORMAL ADHAN COUNTDOWN PHASE
+      final next = prayers[nextIndex];
+      _nextPrayerName = next.name;
+      _prayerTime = DateFormat('HH:mm').format(next.time);
+      _targetTime = _getNextPrayerTime(next.time, now);
+      _isAdhanPhase = true;
+      _iqamaStartTime = null;
+      _iqamaRemaining = Duration.zero; 
+    }
+
     _updateRemaining();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {

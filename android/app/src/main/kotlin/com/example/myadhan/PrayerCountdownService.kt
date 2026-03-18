@@ -260,9 +260,9 @@ class PrayerCountdownService : Service() {
                     val formattedSeconds = String.format("%02d", seconds)
 
                     val iqamaCountdownStr = if (minutes > 0) {
-                        "+$formattedMinutes:$formattedSeconds" // Changed format to minutes:seconds
+                        "$formattedMinutes:$formattedSeconds+" // Changed format to minutes:seconds
                     } else {
-                        "+$formattedMinutes:$formattedSeconds"
+                        "$formattedMinutes:$formattedSeconds+"
                     }
                     
                     val htmlText = "<b><font color='#FF5E5E'>$iqamaCountdownStr</font></b> — ${nextPrayer.name} $displayTime"
@@ -345,31 +345,49 @@ class PrayerCountdownService : Service() {
     }
 
     private fun findNextPrayer(now: Long): NextPrayer? {
-        var closest: NextPrayer? = null
+        var closestFuture: NextPrayer? = null
+        var activeIqamah: NextPrayer? = null
 
         for (prayerId in 1..5) {
             val name = prefs.getString("flutter.prayer_${prayerId}_name", null) ?: continue
             val triggerMillis = prefs.getLong("flutter.prayer_${prayerId}_trigger_millis", 0L)
 
             val isEnabled = prefs.getBoolean("flutter.adhan_enabled_$name", true)
-            if (!isEnabled) continue
+            if (!isEnabled || triggerMillis <= 0) continue
 
-            if (triggerMillis <= 0) continue
-
-            // For Maghrib, Iqama is 5 mins (-300,000s), otherwise 15 mins (-900,000s)
+            // For Maghrib, Iqama is 5 mins (300,000s), otherwise 15 mins (900,000s)
             val iqamaLimitMs = if (name == "المغرب") {
                 5 * 60 * 1000L // 5 minutes
             } else {
                 15 * 60 * 1000L // 15 minutes
             }
-            if (triggerMillis < now - iqamaLimitMs) continue
 
-            if (closest == null || triggerMillis < closest.triggerMillis) {
-                closest = NextPrayer(prayerId, name, triggerMillis)
+            // The flutter plugin updates the `triggerMillis` to tomorrow once the prayer passes.
+            // So if `triggerMillis` is tomorrow, we must check if *today's* version of this prayer 
+            // just passed and is still in the Iqamah window.
+            val todaysTriggerMillis = if (triggerMillis > now + 12 * 60 * 60 * 1000L) {
+                // If it's more than 12 hours away, it's likely tomorrow's time. 
+                // Subtract 24 hours to get today's trigger time.
+                triggerMillis - 24 * 60 * 60 * 1000L
+            } else {
+                triggerMillis
+            }
+
+            // If the prayer has passed today, check if we are *currently* in its Iqamah window
+            if (now >= todaysTriggerMillis && now < todaysTriggerMillis + iqamaLimitMs) {
+                activeIqamah = NextPrayer(prayerId, name, todaysTriggerMillis)
+            }
+
+            // Only consider for "closestFuture" if it hasn't passed (or is exactly now)
+            if (triggerMillis >= now) {
+                if (closestFuture == null || triggerMillis < closestFuture.triggerMillis) {
+                    closestFuture = NextPrayer(prayerId, name, triggerMillis)
+                }
             }
         }
 
-        return closest
+        // If we are actively in an Iqamah window, prioritize showing दैट
+        return activeIqamah ?: closestFuture
     }
 
     private data class NextPrayer(
