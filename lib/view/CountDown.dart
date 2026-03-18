@@ -108,14 +108,24 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
 
   void _handlePhaseTransition() {
     if (_isAdhanPhase && _remaining.inSeconds <= 0 && _lastPlayedPrayer != _nextPrayerName) {
+      final delay = _getIqamaDelay(_nextPrayerName);
+      
+      // If we completely skipped the Iqamah phase (e.g. user manually stepped time forward)
+      if (-_remaining.inSeconds >= delay.inSeconds) {
+        _timer?.cancel();
+        widget.onFinish();
+        ref.read(prayerTimesProvider).whenData(_startCountdown);
+        return;
+      }
+
       _isAdhanPhase = false;
       _lastPlayedPrayer = _nextPrayerName;
-      _iqamaStartTime = DateTime.now();
-      _iqamaRemaining = Duration.zero; // Start at zero
+      _iqamaStartTime = _targetTime ?? DateTime.now();
+      _iqamaRemaining = Duration.zero; 
     } else if (!_isAdhanPhase && _iqamaStartTime != null) {
       final delay = _getIqamaDelay(_lastPlayedPrayer);
       final elapsed = DateTime.now().difference(_iqamaStartTime!);
-      _iqamaRemaining = elapsed; // Count up: just use the elapsed time
+      _iqamaRemaining = elapsed; 
       if (elapsed >= delay) {
         _timer?.cancel();
         widget.onFinish();
