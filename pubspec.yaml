@@ -38,16 +38,12 @@ dependencies:
   geocoding: ^4.0.0
   flutter_qiblah: ^3.1.0+1
   permission_handler: ^11.0.1
-  font_awesome_flutter: ^10.8.0
   url_launcher: ^6.2.5
   shared_preferences: ^2.5.3
   flutter_local_notifications: ^19.4.1
   timezone: ^0.10.0
   flutter_riverpod: ^2.4.0
   http: ^1.1.0
-  flutter_native_splash: ^2.4.7
-  audioplayers: ^6.6.0
-  image: ^4.8.0
   just_audio: ^0.10.5
 
   
@@ -56,6 +52,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_launcher_icons: "^0.14.4"
+  flutter_native_splash: ^2.4.7
 
 flutter_launcher_icons:
   android: "launcher_icon"

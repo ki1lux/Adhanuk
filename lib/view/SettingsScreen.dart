@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:myadhan/prayer_alarm_scheduler.dart';
@@ -133,7 +132,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     }
                   },
                   child: Icon(
-                    FontAwesomeIcons.github,
+                    Icons.link,
                     color: Colors.white,
                     size: 32,
                   ),

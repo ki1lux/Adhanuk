@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:ui';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -759,9 +759,12 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                                 } else {
                                   await audioPlayer.stop();
                                   setDialogState(() => playingSound = sound['id']);
-                                  await audioPlayer.play(AssetSource('audio/${sound['id']}.mp3'));
-                                  audioPlayer.onPlayerComplete.listen((_) {
-                                    setDialogState(() => playingSound = null);
+                                  await audioPlayer.setAsset('assets/audio/${sound['id']}.mp3');
+                                  audioPlayer.play();
+                                  audioPlayer.playerStateStream.listen((state) {
+                                    if (state.processingState == ProcessingState.completed) {
+                                      setDialogState(() => playingSound = null);
+                                    }
                                   });
                                 }
                               },
