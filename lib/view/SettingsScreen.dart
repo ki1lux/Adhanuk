@@ -356,9 +356,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.blueAccent.withOpacity(0.2),
+              color: Colors.blueAccent.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+              border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5)),
             ),
             child: Text(
               "اضغط هنا للتحقق / الإصلاح",
@@ -482,6 +482,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 final id = method['id'] as int;
                 final name = method['name'] as String;
                 final nameEn = method['nameEn'] as String;
+                // ignore: deprecated_member_use
                 return RadioListTile<int>(
                   title: Text(
                     name,
@@ -499,8 +500,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   value: id,
+                  // ignore: deprecated_member_use
                   groupValue: currentMethod,
                   activeColor: const Color(0xFF0768C5),
+                  // ignore: deprecated_member_use
                   onChanged: (value) {
                     setDialogState(() => currentMethod = value!);
                   },

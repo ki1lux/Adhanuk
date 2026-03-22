@@ -712,7 +712,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                             textAlign: TextAlign.right,
                           ),
                           value: isEnabled,
-                          activeColor: const Color(0xFF4DB3E5),
+                          activeThumbColor: const Color(0xFF4DB3E5),
                           onChanged: (value) {
                             setDialogState(() => isEnabled = value);
                           },
@@ -729,7 +729,9 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                         ),
                         const SizedBox(height: 12),
                         ...sounds.map(
-                          (sound) => RadioListTile<String>(
+                          (sound) => 
+                            // ignore: deprecated_member_use
+                            RadioListTile<String>(
                             title: Text(
                               sound['name']!,
                               style: const TextStyle(
@@ -760,8 +762,10 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                               },
                             ),
                             value: sound['id']!,
+                            // ignore: deprecated_member_use
                             groupValue: selectedSound,
                             activeColor: const Color(0xFF4DB3E5),
+                            // ignore: deprecated_member_use
                             onChanged:
                                 isEnabled
                                     ? (value) {

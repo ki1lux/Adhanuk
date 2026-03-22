@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:myadhan/controller/PrayerTimeController.dart';
 import 'package:myadhan/model/PrayerTimeModel.dart';
 import 'package:myadhan/providers/prayer_times_provider.dart';
 
@@ -19,7 +17,6 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
   static const _iqamaDelay = Duration(minutes: 1);
   static const _textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 16);
 
-  final _controller = PrayerTimeController();
   Timer? _timer;
   Duration _remaining = Duration.zero;
   Duration _countUp = Duration.zero;
@@ -28,7 +25,6 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
   DateTime? _targetTime;
   DateTime? _iqamaStartTime;
   String? _nextPrayerName;
-  String? _prayerTime;
 
   @override
   void dispose() {
@@ -52,7 +48,6 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
     final next = prayers[nextIndex];
     
     _nextPrayerName = next.name;
-    _prayerTime = DateFormat('HH:mm').format(next.time);
     _targetTime = _getNextPrayerTime(next.time, now);
     _isAdhanPhase = true;
     _iqamaStartTime = null;
