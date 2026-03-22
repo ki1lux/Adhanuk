@@ -116,14 +116,16 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
 
   int _getNextPrayerIndex(List<({String name, String time})> prayers) {
     final now = TimeOfDay.now();
+    final nowMinutes = now.hour * 60 + now.minute;
+
     for (int i = 0; i < prayers.length; i++) {
       final parts = prayers[i].time.split(':');
-      final prayerTime = TimeOfDay(
-        hour: int.parse(parts[0]),
-        minute: int.parse(parts[1]),
-      );
-      if (prayerTime.hour > now.hour ||
-          (prayerTime.hour == now.hour && prayerTime.minute > now.minute)) {
+      final prayerMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+      
+      int iqamaDelay = prayers[i].name == 'المغرب' ? 5 : 15;
+      final iqamaLimitMinutes = prayerMinutes + iqamaDelay;
+
+      if (nowMinutes < iqamaLimitMinutes) {
         return i;
       }
     }
@@ -637,6 +639,9 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
           );
         }
       },
+      onFinishCountdown: () {
+        setState(() {}); // Rebuild the whole screen to move the active card!
+      },
     );
   }
 
@@ -839,6 +844,7 @@ class _AnimatedPrayerCard extends StatefulWidget {
   final Future<bool> isAdhanEnabledFuture;
   final VoidCallback onSoundTap;
   final ValueChanged<bool> onToggleAdhan;
+  final VoidCallback onFinishCountdown;
 
   const _AnimatedPrayerCard({
     required this.name,
@@ -847,6 +853,7 @@ class _AnimatedPrayerCard extends StatefulWidget {
     required this.isAdhanEnabledFuture,
     required this.onSoundTap,
     required this.onToggleAdhan,
+    required this.onFinishCountdown,
   });
 
   @override
@@ -907,7 +914,7 @@ class _AnimatedPrayerCardState extends State<_AnimatedPrayerCard> {
                           },
                         ),
                         if (widget.isNext)
-                          CountdownTimer(onFinish: () => setState(() {}))
+                          CountdownTimer(onFinish: widget.onFinishCountdown)
                         else
                           const SizedBox.shrink(),
                         const SizedBox(width: 64),

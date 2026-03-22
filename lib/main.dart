@@ -18,6 +18,23 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+class FadeTransitionBuilder extends PageTransitionsBuilder {
+  const FadeTransitionBuilder();
+
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+      child: child,
+    );
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
@@ -148,6 +165,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xff0A2239),
         canvasColor: const Color(0xff0A2239),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: <TargetPlatform, PageTransitionsBuilder>{
+            TargetPlatform.android: FadeTransitionBuilder(),
+            TargetPlatform.iOS: FadeTransitionBuilder(),
+          },
+        ),
       ),
       home: const SplashScreen(nextScreen: MainScreen()),
     );
@@ -163,35 +186,19 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   int _selectedIndex = 0;
-  late final PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: _selectedIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  static final _pages = <Widget>[
-    AdhanScreen(),
-    PrayerTimeScreen(),
-    QiblaScreen(),
-    SettingsScreen(),
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _pages,
+      body: FadeIndexedStack(
+        index: _selectedIndex,
+        children: [
+          AdhanScreen(),
+          PrayerTimeScreen(),
+          QiblaScreen(isActive: _selectedIndex == 2),
+          SettingsScreen(),
+        ],
       ),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -231,8 +238,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          setState(() => _selectedIndex = index);
-          _pageController.jumpToPage(index);
+          if (_selectedIndex != index) {
+            setState(() => _selectedIndex = index);
+          }
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -267,6 +275,39 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A cross-fading stack that preserves the state of its children, achieving 
+/// an efficient transition similar to IndexedStack with fading children.
+class FadeIndexedStack extends StatelessWidget {
+  final int index;
+  final List<Widget> children;
+  final Duration duration;
+
+  const FadeIndexedStack({
+    super.key,
+    required this.index,
+    required this.children,
+    this.duration = const Duration(milliseconds: 350),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: List.generate(children.length, (i) {
+        final isActive = i == index;
+        return IgnorePointer(
+          ignoring: !isActive,
+          child: AnimatedOpacity(
+            duration: duration,
+            curve: Curves.easeInOut,
+            opacity: isActive ? 1.0 : 0.0,
+            child: children[i],
+          ),
+        );
+      }),
     );
   }
 }

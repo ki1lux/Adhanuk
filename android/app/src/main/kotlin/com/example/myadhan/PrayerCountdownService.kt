@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import androidx.core.text.HtmlCompat
 
 /**
  * Foreground Service that shows a persistent notification with countdown
@@ -233,31 +234,64 @@ class PrayerCountdownService : Service() {
         }
 
         // Line 2: Prayer name + time + live countdown
-        val text: String
+        var text: CharSequence
 
         if (nextPrayer != null) {
             val remainingMs = nextPrayer.triggerMillis - now
             val displayTime = prefs.getString("flutter.prayer_${nextPrayer.id}_time", null) ?: ""
 
             if (remainingMs <= 0) {
-                text = "حان وقت صلاة ${nextPrayer.name}"
-                currentPrayerId = null
+                // Determine how much time has passed since the prayer triggered
+                val elapsedSinceTrigger = now - nextPrayer.triggerMillis
+                // If it's Maghrib, Iqamah is 5 minutes. Otherwise, 15 minutes.
+                val iqamaLimitMs = if (nextPrayer.name == "المغرب") {
+                    5 * 60 * 1000L // 5 minutes
+                } else {
+                    15 * 60 * 1000L // 15 minutes
+                }
+
+                if (elapsedSinceTrigger < iqamaLimitMs) {
+                    // Count UPwards: How much time has elapsed since the Adhan
+                    val totalSeconds = elapsedSinceTrigger / 1000
+                    val minutes = totalSeconds / 60
+                    val seconds = totalSeconds % 60
+
+                    val formattedMinutes = String.format("%02d", minutes)
+                    val formattedSeconds = String.format("%02d", seconds)
+
+                    val iqamaCountdownStr = if (minutes > 0) {
+                        "$formattedMinutes:$formattedSeconds+" // Changed format to minutes:seconds
+                    } else {
+                        "$formattedMinutes:$formattedSeconds+"
+                    }
+                    
+                    val htmlText = "<b><font color='#FF5E5E'>$iqamaCountdownStr</font></b> — ${nextPrayer.name} $displayTime"
+                    text = HtmlCompat.fromHtml(htmlText, HtmlCompat.FROM_HTML_MODE_LEGACY)
+                    currentPrayerId = nextPrayer.id 
+                } else {
+                    text = "حان وقت صلاة ${nextPrayer.name}"
+                    currentPrayerId = null
+                }
             } else {
                 val totalSeconds = remainingMs / 1_000
                 val hours = totalSeconds / 3600
                 val minutes = (totalSeconds % 3600) / 60
                 val seconds = totalSeconds % 60
 
+                val formattedHours = String.format("%02d", hours)
+                val formattedMinutes = String.format("%02d", minutes)
+                val formattedSeconds = String.format("%02d", seconds)
+
                 val countdownStr = when {
-                    hours > 0 -> "بعد $hours ساعة و $minutes دقيقة و $seconds ثانية"
-                    minutes > 0 -> "بعد $minutes دقيقة و $seconds ثانية"
-                    else -> "بعد $seconds ثانية"
+                    hours > 0 -> "$formattedHours:$formattedMinutes:$formattedSeconds"
+                    minutes > 0 -> "$formattedMinutes:$formattedSeconds"
+                    else -> "$formattedMinutes:$formattedSeconds"
                 }
 
                 text = if (displayTime.isNotEmpty()) {
-                    "${nextPrayer.name} $displayTime — $countdownStr"
+                    "$countdownStr — ${nextPrayer.name} $displayTime"
                 } else {
-                    "${nextPrayer.name} — $countdownStr"
+                    "$countdownStr — ${nextPrayer.name}"
                 }
                 currentPrayerId = nextPrayer.id
             }
@@ -267,7 +301,12 @@ class PrayerCountdownService : Service() {
 
         val builder = getOrCreateBuilder()
         builder.setContentTitle(title)
-        builder.setContentText(if (midnightRefreshInProgress) "جاري تحديث التاريخ..." else text)
+        
+        if (midnightRefreshInProgress) {
+            builder.setContentText("جاري تحديث التاريخ...")
+        } else {
+            builder.setContentText(text)
+        }
 
         val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         mgr.notify(NOTIFICATION_ID, builder.build())
@@ -306,25 +345,49 @@ class PrayerCountdownService : Service() {
     }
 
     private fun findNextPrayer(now: Long): NextPrayer? {
-        var closest: NextPrayer? = null
+        var closestFuture: NextPrayer? = null
+        var activeIqamah: NextPrayer? = null
 
         for (prayerId in 1..5) {
             val name = prefs.getString("flutter.prayer_${prayerId}_name", null) ?: continue
             val triggerMillis = prefs.getLong("flutter.prayer_${prayerId}_trigger_millis", 0L)
 
             val isEnabled = prefs.getBoolean("flutter.adhan_enabled_$name", true)
-            if (!isEnabled) continue
+            if (!isEnabled || triggerMillis <= 0) continue
 
-            if (triggerMillis <= 0) continue
+            // For Maghrib, Iqama is 5 mins (300,000s), otherwise 15 mins (900,000s)
+            val iqamaLimitMs = if (name == "المغرب") {
+                5 * 60 * 1000L // 5 minutes
+            } else {
+                15 * 60 * 1000L // 15 minutes
+            }
 
-            if (triggerMillis < now - 30_000) continue
+            // The flutter plugin updates the `triggerMillis` to tomorrow once the prayer passes.
+            // So if `triggerMillis` is tomorrow, we must check if *today's* version of this prayer 
+            // just passed and is still in the Iqamah window.
+            val todaysTriggerMillis = if (triggerMillis > now + 12 * 60 * 60 * 1000L) {
+                // If it's more than 12 hours away, it's likely tomorrow's time. 
+                // Subtract 24 hours to get today's trigger time.
+                triggerMillis - 24 * 60 * 60 * 1000L
+            } else {
+                triggerMillis
+            }
 
-            if (closest == null || triggerMillis < closest.triggerMillis) {
-                closest = NextPrayer(prayerId, name, triggerMillis)
+            // If the prayer has passed today, check if we are *currently* in its Iqamah window
+            if (now >= todaysTriggerMillis && now < todaysTriggerMillis + iqamaLimitMs) {
+                activeIqamah = NextPrayer(prayerId, name, todaysTriggerMillis)
+            }
+
+            // Only consider for "closestFuture" if it hasn't passed (or is exactly now)
+            if (triggerMillis >= now) {
+                if (closestFuture == null || triggerMillis < closestFuture.triggerMillis) {
+                    closestFuture = NextPrayer(prayerId, name, triggerMillis)
+                }
             }
         }
 
-        return closest
+        // If we are actively in an Iqamah window, prioritize showing दैट
+        return activeIqamah ?: closestFuture
     }
 
     private data class NextPrayer(
