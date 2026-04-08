@@ -59,7 +59,8 @@ Adhanuk/
 *(Add your application screenshots here)*
 
 | Home Dashboard | Qibla Compass | Settings / Preferences | Active Notification |
-|:---:|:---:|:---:|:---:|
+|:---:|:---:|:---:|:---:|<img width="412" height="917" alt="compass" src="https://github.com/user-attachments/assets/ddc2f61b-c534-4069-b469-473760e41c7e" />
+
 | <img src="placeholder_path/home.png" width="200"/> | <img src="placeholder_path/qibla.png" width="200"/> | <img src="placeholder_path/settings.png" width="200"/> | <img src="placeholder_path/notification.png" width="200"/> |
 
 ## 🚀 Setup & Installation
