@@ -347,6 +347,7 @@ class PrayerCountdownService : Service() {
     private fun findNextPrayer(now: Long): NextPrayer? {
         var closestFuture: NextPrayer? = null
         var activeIqamah: NextPrayer? = null
+        var earliestToday: NextPrayer? = null
 
         for (prayerId in 1..5) {
             val name = prefs.getString("flutter.prayer_${prayerId}_name", null) ?: continue
@@ -354,6 +355,11 @@ class PrayerCountdownService : Service() {
 
             val isEnabled = prefs.getBoolean("flutter.adhan_enabled_$name", true)
             if (!isEnabled || triggerMillis <= 0) continue
+
+            // Track the earliest prayer of the day (usually Fajr) to use as a fallback
+            if (earliestToday == null || triggerMillis < earliestToday.triggerMillis) {
+                earliestToday = NextPrayer(prayerId, name, triggerMillis)
+            }
 
             // For Maghrib, Iqama is 5 mins (300,000s), otherwise 15 mins (900,000s)
             val iqamaLimitMs = if (name == "المغرب") {
@@ -386,8 +392,19 @@ class PrayerCountdownService : Service() {
             }
         }
 
-        // If we are actively in an Iqamah window, prioritize showing दैट
-        return activeIqamah ?: closestFuture
+        // If we are actively in an Iqamah window, prioritize showing that
+        if (activeIqamah != null) return activeIqamah
+        
+        // If there's a future prayer today, return it
+        if (closestFuture != null) return closestFuture
+        
+        // If NO prayers are left today (e.g. Isha finished running in complete background), 
+        // fallback to tomorrow's Fajr by implicitly adding 24 hours to today's earliest prayer.
+        if (earliestToday != null) {
+            return NextPrayer(earliestToday.id, earliestToday.name, earliestToday.triggerMillis + 24 * 60 * 60 * 1000L)
+        }
+
+        return null
     }
 
     private data class NextPrayer(
