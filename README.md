@@ -56,7 +56,7 @@ Adhanuk/
 ```
 
 ## 📸 Screenshots
-*(Add your application screenshots here)*
+
 
 | Home Dashboard | Qibla Compass | Settings / Preferences | Active Notification |
 |:---:|:---:|:---:|:---:|
@@ -75,7 +75,7 @@ Follow these steps to run the app locally.
 ### Installation
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/Adhanuk.git
+   git clone https://github.com/ki1lux/Adhanuk.git
    cd Adhanuk
    ```
 
