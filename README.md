@@ -59,9 +59,9 @@ Adhanuk/
 *(Add your application screenshots here)*
 
 | Home Dashboard | Qibla Compass | Settings / Preferences | Active Notification |
-|:---:|:---:|:---:|:---:|<img width="412" height="917" alt="compass" src="https://github.com/user-attachments/assets/ddc2f61b-c534-4069-b469-473760e41c7e" />
+|:---:|:---:|:---:|:---:|
 
-| <img src="placeholder_path/home.png" width="200"/> | <img src="placeholder_path/qibla.png" width="200"/> | <img src="placeholder_path/settings.png" width="200"/> | <img src="placeholder_path/notification.png" width="200"/> |
+| <img width="412" height="917" alt="home" src="https://github.com/user-attachments/assets/7af0c2a4-e038-441b-b7c2-208165dbd679" /> | <img width="412" height="917" alt="compass" src="https://github.com/user-attachments/assets/ddc2f61b-c534-4069-b469-473760e41c7e" /> | <img src="placeholder_path/settings.png" width="200"/> | <img width="412" height="917" alt="prayerTimeList" src="https://github.com/user-attachments/assets/9207f318-b1ca-4633-b55d-c2d7eec5aa09" /> |
 
 ## 🚀 Setup & Installation
 
