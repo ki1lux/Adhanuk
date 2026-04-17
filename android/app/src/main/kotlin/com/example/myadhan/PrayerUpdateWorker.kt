@@ -99,8 +99,28 @@ class PrayerUpdateWorker(
         // Read user's preferred calculation method (default: 19 = Algeria)
         val method = prefs.getInt("flutter.calculation_method", 19)
 
+        // Determine if we are past today's Isha (+ 15m). If so, fetch tomorrow's data.
+        var targetDate: java.util.Date? = null
+        val ishaTimeStr = prefs.getString("flutter.prayer_5_time", null)
+        if (ishaTimeStr != null) {
+            try {
+                val parts = ishaTimeStr.split(" ")[0].split(":")
+                val nowCal = Calendar.getInstance()
+                val ishaCal = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+                    set(Calendar.MINUTE, parts[1].toInt())
+                }
+                ishaCal.add(Calendar.MINUTE, 15)
+
+                if (nowCal.timeInMillis > ishaCal.timeInMillis) {
+                    nowCal.add(Calendar.DAY_OF_YEAR, 1)
+                    targetDate = nowCal.time
+                }
+            } catch (e: Exception) {}
+        }
+
         // Attempt API fetch
-        val response = AladhanApiClient.fetchPrayerTimes(lat, lng, method = method)
+        val response = AladhanApiClient.fetchPrayerTimes(lat, lng, method = method, date = targetDate)
 
         if (response == null) {
             // Network failure — still reschedule from whatever is cached

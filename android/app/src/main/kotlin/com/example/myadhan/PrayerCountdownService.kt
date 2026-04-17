@@ -132,10 +132,10 @@ class PrayerCountdownService : Service() {
      * Perform a direct API fetch on a background thread at midnight.
      * Much faster than WorkManager — updates SharedPreferences within seconds.
      */
-    private fun fetchFreshDataDirectly() {
+    private fun fetchFreshDataDirectly(targetDate: java.util.Date? = null) {
         if (midnightRefreshInProgress) return
         midnightRefreshInProgress = true
-        Log.d(TAG, "Midnight — fetching fresh prayer data directly...")
+        Log.d(TAG, "Fetching fresh prayer data directly... (target: $targetDate)")
 
         Thread {
             try {
@@ -148,7 +148,7 @@ class PrayerCountdownService : Service() {
                 }
 
                 val method = prefs.getInt("flutter.calculation_method", 19)
-                val response = AladhanApiClient.fetchPrayerTimes(lat, lng, method = method)
+                val response = AladhanApiClient.fetchPrayerTimes(lat, lng, method = method, date = targetDate)
 
                 if (response != null) {
                     // Update Hijri date in SharedPreferences immediately
@@ -212,14 +212,35 @@ class PrayerCountdownService : Service() {
     private fun updateNotification() {
         val now = System.currentTimeMillis()
 
-        // Detect midnight crossing — trigger direct API fetch instantly since we tick every 1s
-        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-        if (lastTrackedDate.isNotEmpty() && todayStr != lastTrackedDate) {
-            Log.d(TAG, "Date changed from $lastTrackedDate to $todayStr")
-            lastTrackedDate = todayStr
-            fetchFreshDataDirectly()
+        // 1. Calculate Target Date based on Isha + 15m rule
+        var targetDate: java.util.Date? = null
+        val ishaTimeStr = prefs.getString("flutter.prayer_5_time", null)
+        val nowCal = Calendar.getInstance()
+        
+        if (ishaTimeStr != null) {
+            try {
+                val parts = ishaTimeStr.split(" ")[0].split(":")
+                val ishaCal = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+                    set(Calendar.MINUTE, parts[1].toInt())
+                }
+                ishaCal.add(Calendar.MINUTE, 15)
+
+                if (nowCal.timeInMillis > ishaCal.timeInMillis) {
+                    nowCal.add(Calendar.DAY_OF_YEAR, 1)
+                    targetDate = nowCal.time
+                }
+            } catch (e: Exception) {}
         }
-        lastTrackedDate = todayStr
+
+        val targetDayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(nowCal.time)
+
+        if (lastTrackedDate.isNotEmpty() && targetDayStr != lastTrackedDate) {
+            Log.d(TAG, "🌙 Shifted to new reporting day: $targetDayStr")
+            lastTrackedDate = targetDayStr
+            fetchFreshDataDirectly(targetDate)
+        }
+        lastTrackedDate = targetDayStr
 
         val nextPrayer = findNextPrayer(now)
 

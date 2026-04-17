@@ -25,20 +25,40 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
   PrayerTimesNotifier(this._apiService, this._locationController)
       : super(const AsyncValue.loading());
 
-  /// Schedule a refresh at the next midnight (+ 5s buffer) so the Hijri date
-  /// and prayer times update automatically without an app restart.
-  void scheduleMidnightRefresh() {
+  /// Schedule a refresh immediately after today's Isha (+ 15m buffer) so the Hijri date
+  /// and prayer times swap to tomorrow's automatically.
+  void scheduleNextDayRefresh() async {
     _midnightTimer?.cancel();
-
     final now = DateTime.now();
-    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
-    // Add a 5-second buffer to ensure the date has fully rolled over
-    final delay = nextMidnight.difference(now) + const Duration(seconds: 5);
+    DateTime nextRefresh;
 
-    print('🕛 Midnight refresh scheduled in ${delay.inSeconds}s');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final ishaTimeStr = prefs.getString('prayer_5_time');
+      
+      if (ishaTimeStr != null) {
+        final parts = ishaTimeStr.split(' ')[0].split(':');
+        var refreshTime = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]))
+            .add(const Duration(minutes: 15, seconds: 5));
+
+        // If 'now' is very close to or past today's refresh time, schedule for tomorrow
+        if (now.isAfter(refreshTime.subtract(const Duration(seconds: 15)))) {
+          nextRefresh = refreshTime.add(const Duration(days: 1));
+        } else {
+          nextRefresh = refreshTime;
+        }
+      } else {
+        nextRefresh = DateTime(now.year, now.month, now.day + 1, 0, 0, 5);
+      }
+    } catch (e) {
+      nextRefresh = DateTime(now.year, now.month, now.day + 1, 0, 0, 5);
+    }
+
+    final delay = nextRefresh.difference(now);
+    print('🕛 Next day refresh scheduled in ${delay.inSeconds}s (at $nextRefresh)');
 
     _midnightTimer = Timer(delay, () {
-      print('🕛 Midnight reached — refreshing prayer times & Hijri date');
+      print('🕛 Isha finished — refreshing prayer times & Hijri date for tomorrow');
       fetchPrayerTimes();
     });
   }
@@ -111,16 +131,33 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
         print('📍 Got coordinates: $latitude, $longitude');
       }
       
-      // Read user's preferred calculation method (default: 19 = Algeria)
       final prefs = await SharedPreferences.getInstance();
+      
+      // Determine if we should fetch today or tomorrow
+      final ishaTimeStr = prefs.getString('prayer_5_time');
+      bool isAfterIsha = false;
+      if (ishaTimeStr != null) {
+        try {
+          final now = DateTime.now();
+          final parts = ishaTimeStr.split(' ')[0].split(':');
+          final ishaTimeObj = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
+          
+          if (now.isAfter(ishaTimeObj.add(const Duration(minutes: 15)))) {
+            isAfterIsha = true;
+          }
+        } catch (e) {}
+      }
+      
+      final targetDate = isAfterIsha ? DateTime.now().add(const Duration(days: 1)) : DateTime.now();
       final method = prefs.getInt('calculation_method') ?? 19;
       
       final response = await _apiService.fetchPrayerTimes(
         latitude: latitude,
         longitude: longitude,
         method: method,
+        targetDate: targetDate,
       );
-      print('✅ Got prayer times from API (method=$method)');
+      print('✅ Got prayer times from API (method=$method, targetDate=${targetDate.day})');
 
       final model = PrayerTimeModel(
         fajer: _parseTimeString(response.fajr),
@@ -136,8 +173,7 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
 
       state = AsyncValue.data(model);
 
-      // Re-schedule the next midnight refresh
-      scheduleMidnightRefresh();
+      scheduleNextDayRefresh();
     } catch (e, st) {
       print('❌ Error fetching prayer times: $e');
       state = AsyncValue.error(e, st);

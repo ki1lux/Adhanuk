@@ -156,6 +156,8 @@ class AdhanAlarmService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true) // Can't be swiped while Adhan is playing
             .setContentIntent(tapPending)
+            .setFullScreenIntent(tapPending, true) // Forces it to be the #1 active heads-up alarm
+            .setWhen(System.currentTimeMillis())
             .addAction(R.drawable.ic_stat_adhan, "إيقاف الأذان", stopPending)
             .setSound(null) // No notification sound — audio via MediaPlayer
             .build()

@@ -32,10 +32,11 @@ object AladhanApiClient {
         latitude: Double,
         longitude: Double,
         method: Int = 19,
-        school: Int = 0
+        school: Int = 0,
+        date: java.util.Date? = null
     ): PrayerTimesResponse? {
         val dateFormat = java.text.SimpleDateFormat("dd-MM-yyyy", java.util.Locale.US)
-        val dateString = dateFormat.format(java.util.Date())
+        val dateString = dateFormat.format(date ?: java.util.Date())
         val urlStr = "$BASE_URL/$dateString?latitude=$latitude&longitude=$longitude&method=$method&school=$school"
 
         Log.d(TAG, "Fetching: $urlStr")
