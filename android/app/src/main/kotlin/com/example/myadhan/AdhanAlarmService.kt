@@ -29,6 +29,19 @@ class AdhanAlarmService : Service() {
     private var currentPrayerTime = ""
     private val handler = Handler(Looper.getMainLooper())
     private var isPlaying = false
+    private var startTimeMillis: Long = 0
+
+    // Receiver for hardware buttons (Power / Volume)
+    private val hardwareButtonReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            Log.d(TAG, "Hardware/Screen action received: ${intent.action}")
+            if (System.currentTimeMillis() - startTimeMillis < 1500) {
+                Log.d(TAG, "Ignoring action because playback just started")
+                return
+            }
+            stopAdhanAndService()
+        }
+    }
 
     // Receiver for the "Stop" button in the notification
     private val stopReceiver = object : BroadcastReceiver() {
@@ -63,6 +76,15 @@ class AdhanAlarmService : Service() {
         } else {
             registerReceiver(stopReceiver, filter)
         }
+
+        // Register hardware buttons receiver
+        val hardwareFilter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction("android.media.VOLUME_CHANGED_ACTION")
+        }
+        // System broadcasts do not require the RECEIVER_EXPORTED flag even on Android 14+
+        registerReceiver(hardwareButtonReceiver, hardwareFilter)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -72,6 +94,7 @@ class AdhanAlarmService : Service() {
 
         currentPrayerName = prayerName
         currentPrayerTime = prayerTime
+        startTimeMillis = System.currentTimeMillis()
 
         Log.d(TAG, "Starting Adhan: $prayerName at $prayerTime, sound=$soundName")
 
@@ -112,6 +135,11 @@ class AdhanAlarmService : Service() {
         AdhanPlayer.stop()
         try {
             unregisterReceiver(stopReceiver)
+        } catch (e: Exception) {
+            // Already unregistered
+        }
+        try {
+            unregisterReceiver(hardwareButtonReceiver)
         } catch (e: Exception) {
             // Already unregistered
         }
@@ -159,6 +187,8 @@ class AdhanAlarmService : Service() {
             .setFullScreenIntent(tapPending, true) // Forces it to be the #1 active heads-up alarm
             .setWhen(System.currentTimeMillis())
             .addAction(R.drawable.ic_stat_adhan, "إيقاف الأذان", stopPending)
+            .setStyle(androidx.media.app.NotificationCompat.MediaStyle()
+                .setShowActionsInCompactView(0))
             .setSound(null) // No notification sound — audio via MediaPlayer
             .build()
     }
