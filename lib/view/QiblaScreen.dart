@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:myadhan/controller/QiblahController.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_qiblah/flutter_qiblah.dart';
 
 import 'dart:async';
@@ -83,10 +83,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   Future<void> _initAudioPlayer() async {
-    await _audioPlayer.setAsset("assets/audio/effects/compass_ticks.mp3");
-    await _bigAudioPlayer.setAsset(
-      "assets/audio/effects/big_compass_ticks.mp3",
-    );
+    await _audioPlayer.setSource(AssetSource('audio/effects/compass_ticks.mp3'));
+    await _bigAudioPlayer.setSource(AssetSource('audio/effects/big_compass_ticks.mp3'));
   }
 
   void _processCompassAudio(QiblahDirection qiblahDirection) async {
@@ -111,8 +109,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
             currentDir; // Reset small tick origin so it doesn't immediately fire
         if (!_isPlayingBigTick) {
           _isPlayingBigTick = true;
-          await _bigAudioPlayer.seek(Duration.zero);
-          _bigAudioPlayer.play();
+          await _bigAudioPlayer.resume();
           _isPlayingBigTick = false;
         }
       }
@@ -121,8 +118,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
         _lastTickDirection = currentDir;
         if (!_isPlayingTick) {
           _isPlayingTick = true;
-          await _audioPlayer.seek(Duration.zero);
-          _audioPlayer.play();
+          await _audioPlayer.resume();
           _isPlayingTick = false;
         }
       }

@@ -1,5 +1,4 @@
 import 'dart:convert';
-// import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
 
 /// Response model for the Aladhan API timings
@@ -78,51 +77,3 @@ class PrayerTimesApiService {
   }
 }
 
-// class PrayerTimesApiService {
-//   static const _baseUrl = 'https://api.aladhan.com/v1/timings';
-//   static const _timeout = Duration(seconds: 20);
-
-//   final Dio _dio;
-
-//   PrayerTimesApiService({Dio? dio})
-//       : _dio = dio ??
-//             Dio(
-//               BaseOptions(
-//                 connectTimeout: _timeout,
-//                 receiveTimeout: _timeout,
-//               ),
-//             );
-
-//   Future<AladhanApiResponse> fetchPrayerTimes({
-//     required double latitude,
-//     required double longitude,
-//     int method = 19,
-//     int school = 0,
-//   }) async {
-//     final now = DateTime.now();
-//     final dateStr =
-//         '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}';
-
-//     try {
-//       final response = await _dio.get(
-//         '$_baseUrl/$dateStr',
-//         queryParameters: {
-//           'latitude': latitude,
-//           'longitude': longitude,
-//           'method': method,
-//           'school': school,
-//         },
-//       );
-
-//       final jsonData = response.data as Map<String, dynamic>;
-
-//       if (jsonData['code'] != 200) {
-//         throw Exception('API error: ${jsonData['status']}');
-//       }
-
-//       return AladhanApiResponse.fromJson(jsonData);
-//     } on DioException catch (e) {
-//       throw Exception('API request failed: ${e.response?.statusCode ?? e.message}');
-//     }
-//   }
-// }

@@ -42,7 +42,6 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("androidx.media:media:1.7.0")
 
     // ✅ إضافة مكتبة desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")

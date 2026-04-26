@@ -12,34 +12,13 @@ class Analogclockview extends StatefulWidget {
 }
 
 class _AnalogclockviewState extends State<Analogclockview> {
-  // final FlutterLocalNotificationsPlugin notificationsPlugin =
-  //     FlutterLocalNotificationsPlugin();
+
   DateTime time = DateTime.now();
   late String timeAfterReform = DateFormat('h:mm a').format(time);
   late ClockModel model;
   late ClockController controller;
 
-  // Future<void> init() async {
-  //   tz.initializeTimeZones();
-  //   tz.setLocalLocation(tz.getLocation('Algeria/Batna'));
 
-  //   const androidSettings = AndroidInitializationSettings('ic_stat_adhan.png');
-
-  //   const DarwinInitializationSettings iosSettings =
-  //       DarwinInitializationSettings();
-  //   const InitializationSettings initializationSettings =
-  //       InitializationSettings(android: androidSettings, iOS: iosSettings);
-  //   // await notificationsPlugin.initialize(initializationSettings);
-
-  //   await notificationsPlugin.initialize(
-  //     initializationSettings,
-  //     onDidReceiveNotificationResponse: (NotificationResponse response) {
-  //       if (response.actionId == 'STOP_ADHAN') {
-  //         notificationsPlugin.cancelAll(); // stop Adhan
-  //       }
-  //     },
-  //   );
-  // }
 
   @override
   void initState() {
@@ -87,24 +66,7 @@ class _AnalogclockviewState extends State<Analogclockview> {
             fontWeight: FontWeight.bold,
           ),
         ),
-//         ElevatedButton(onPressed: ()async{
-//           await notificationsPlugin.show(
-//   0,
-//   'Test Adhan',
-//   'This should play Adhan sound',
-//   const NotificationDetails(
-//     android: AndroidNotificationDetails(
-//       'daily_reminder_channel_id',
-//       'Daily Reminders',
-//       channelDescription: 'Test Adhan',
-//       importance: Importance.max,
-//       priority: Priority.high,
-//       playSound: true,
-//       sound: RawResourceAndroidNotificationSound('adhan1'),
-//     ),
-//   ),
-// );
-// }, child: Text("Adhan")),
+
       ],
     );
   }
@@ -172,15 +134,7 @@ class ClockPainter extends CustomPainter {
           ..strokeCap = StrokeCap.round;
     canvas.drawLine(center, minuteHand, minutePaint);
 
-    // final paint = Paint()..color = Colors.red;
-    // final handRect = RRect.fromLTRBR(
-    //   15,
-    //   0,
-    //   8,
-    //   9, // Start at 15 to leave space for tail
-    //   Radius.circular(radius),
-    // );
-    // canvas.drawRRect(handRect, paint);
+
 
     // عقرب الثواني
     final secondAngle = degree.second;
@@ -193,7 +147,7 @@ class ClockPainter extends CustomPainter {
           ..color = Color(0xff283F54)
           ..strokeWidth = 2
           ..strokeCap = StrokeCap.round;
-    // canvas.drawLine(center, secondHand, secondPaint);
+
     final tailLength = radius * 0.15;
     final secondHandTail = Offset(
       center.dx - tailLength * cos(secondAngle - pi / 2),

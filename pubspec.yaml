@@ -32,7 +32,6 @@ dependencies:
     sdk: flutter
 
   geolocator: ^13.0.2
-  adhan: ^2.0.0+1
   intl: ^0.20.2
   flutter_svg: ^2.1.0
   geocoding: ^4.0.0
@@ -44,9 +43,7 @@ dependencies:
   timezone: ^0.10.0
   flutter_riverpod: ^2.4.0
   http: ^1.1.0
-  just_audio: ^0.10.5
-  dio: ^5.9.2
-
+  audioplayers: ^6.1.0
   
 
 dev_dependencies:
@@ -94,8 +91,6 @@ flutter:
     - assets/h1.svg
     - assets/h2.svg
     - assets/h3.svg
-    - assets/ka3ba.png
-    - assets/qiblah_direction.svg
     - assets/ka3baInCompass.svg
     - assets/test.svg
     - assets/arrow.svg
