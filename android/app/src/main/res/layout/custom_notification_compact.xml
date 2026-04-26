@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:layoutDirection="rtl"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="start">
+
+        <TextView
+            android:id="@+id/notification_title"
+            style="@style/TextAppearance.Compat.Notification.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="الصلاة" />
+
+        <TextView
+            android:id="@+id/notification_text"
+            style="@style/TextAppearance.Compat.Notification.Line2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="الوقت" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/notification_stop_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="إيقاف الأذان"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#4DB3E5"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:layout_marginStart="8dp" />
+
+</LinearLayout>

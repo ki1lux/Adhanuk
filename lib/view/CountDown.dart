@@ -14,8 +14,8 @@ class CountdownTimer extends ConsumerStatefulWidget {
 }
 
 class _CountdownTimerState extends ConsumerState<CountdownTimer> {
-  static const _defaultIqamaDelay = Duration(minutes: 15);
-  static const _maghribIqamaDelay = Duration(minutes: 5);
+  static const _defaultIqamaDelay = Duration(minutes: 30);
+  static const _maghribIqamaDelay = Duration(minutes: 15);
   static const _textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 16);
 
   Timer? _timer;

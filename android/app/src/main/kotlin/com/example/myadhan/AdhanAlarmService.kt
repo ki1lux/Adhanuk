@@ -175,6 +175,15 @@ class AdhanAlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val remoteViews = android.widget.RemoteViews(packageName, R.layout.custom_notification_compact)
+        remoteViews.setTextViewText(R.id.notification_title, "حان وقت صلاة $prayerName")
+        remoteViews.setTextViewText(R.id.notification_text, "الوقت: $prayerTime")
+        remoteViews.setOnClickPendingIntent(R.id.notification_stop_btn, stopPending)
+
+        val bigViews = android.widget.RemoteViews(packageName, R.layout.custom_notification_big)
+        bigViews.setTextViewText(R.id.notification_title, "حان وقت صلاة $prayerName")
+        bigViews.setTextViewText(R.id.notification_text, "الوقت: $prayerTime")
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("حان وقت صلاة $prayerName")
             .setContentText("الوقت: $prayerTime")
@@ -187,8 +196,9 @@ class AdhanAlarmService : Service() {
             .setFullScreenIntent(tapPending, true) // Forces it to be the #1 active heads-up alarm
             .setWhen(System.currentTimeMillis())
             .addAction(R.drawable.ic_stat_adhan, "إيقاف الأذان", stopPending)
-            .setStyle(androidx.media.app.NotificationCompat.MediaStyle()
-                .setShowActionsInCompactView(0))
+            .setStyle(androidx.core.app.NotificationCompat.DecoratedCustomViewStyle())
+            .setCustomContentView(remoteViews)
+            .setCustomBigContentView(bigViews)
             .setSound(null) // No notification sound — audio via MediaPlayer
             .build()
     }

@@ -122,7 +122,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
       final parts = prayers[i].time.split(':');
       final prayerMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
       
-      int iqamaDelay = prayers[i].name == 'المغرب' ? 5 : 15;
+      int iqamaDelay = prayers[i].name == 'المغرب' ? 15 : 30;
       final iqamaLimitMinutes = prayerMinutes + iqamaDelay;
 
       if (nowMinutes < iqamaLimitMinutes) {
