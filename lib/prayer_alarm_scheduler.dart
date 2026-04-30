@@ -71,6 +71,13 @@ class PrayerAlarmScheduler {
       await prefs.setString('adhan_sound_$name', soundName);
       await prefs.setInt('prayer_${id}_trigger_millis', scheduledTime.millisecondsSinceEpoch);
 
+      // Schedule 4-minute reminder notification before each prayer
+      final reminderTime = scheduledTime.subtract(const Duration(minutes: 4));
+      if (reminderTime.isAfter(now)) {
+        await _scheduleReminderNotification(id, name, timeStr, reminderTime);
+        print('🔔 Reminder scheduled for $name at $reminderTime (4 min before)');
+      }
+
       // Schedule NATIVE alarm via AlarmManager → PrayerAlarmReceiver → AdhanAlarmService
       // This handles audio playback on ALARM stream (not interrupted by notifications)
       try {
@@ -129,6 +136,38 @@ class PrayerAlarmScheduler {
           ),]
         ),
         iOS: const DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  /// Schedule a 4-minute reminder notification before a prayer
+  static Future<void> _scheduleReminderNotification(
+    int id,
+    String name,
+    String timeStr,
+    DateTime reminderTime,
+  ) async {
+    final tzReminderTime = tz.TZDateTime.from(reminderTime, tz.local);
+
+    await _notificationsPlugin.zonedSchedule(
+      id + 200, // Unique ID for reminders (200-205)
+      'باقي ٤ دقائق على صلاة $name',
+      'وقت الصلاة: $timeStr',
+      tzReminderTime,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'prayer_reminder_channel',
+          'تذكير الصلاة',
+          channelDescription: 'تذكير قبل ٤ دقائق من وقت الصلاة',
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: false,
+          enableVibration: true,
+          autoCancel: true,
+        ),
+        iOS: DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
