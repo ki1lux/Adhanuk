@@ -28,5 +28,18 @@
             android:layout_height="wrap_content"
             android:text="الوقت" />
     </LinearLayout>
+    <TextView
+        android:id="@+id/notification_stop_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="إيقاف الأذان"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#4DB3E5"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:layout_marginStart="8dp" />
 
 </LinearLayout>
