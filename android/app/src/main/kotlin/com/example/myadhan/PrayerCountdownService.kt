@@ -264,11 +264,11 @@ class PrayerCountdownService : Service() {
             if (remainingMs <= 0) {
                 // Determine how much time has passed since the prayer triggered
                 val elapsedSinceTrigger = now - nextPrayer.triggerMillis
-                // If it's Maghrib, Iqamah is 5 minutes. Otherwise, 15 minutes.
+                // If it's Maghrib, Iqamah is 15 minutes. Otherwise, 30 minutes.
                 val iqamaLimitMs = if (nextPrayer.name == "المغرب") {
-                    5 * 60 * 1000L // 5 minutes
-                } else {
                     15 * 60 * 1000L // 15 minutes
+                } else {
+                    30 * 60 * 1000L // 30 minutes
                 }
 
                 if (elapsedSinceTrigger < iqamaLimitMs) {
@@ -382,11 +382,11 @@ class PrayerCountdownService : Service() {
                 earliestToday = NextPrayer(prayerId, name, triggerMillis)
             }
 
-            // For Maghrib, Iqama is 5 mins (300,000s), otherwise 15 mins (900,000s)
+            // For Maghrib, Iqama is 15 mins (900,000s), otherwise 30 mins (1,800,000s)
             val iqamaLimitMs = if (name == "المغرب") {
-                5 * 60 * 1000L // 5 minutes
-            } else {
                 15 * 60 * 1000L // 15 minutes
+            } else {
+                30 * 60 * 1000L // 30 minutes
             }
 
             // The flutter plugin updates the `triggerMillis` to tomorrow once the prayer passes.

@@ -25,7 +25,7 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
   PrayerTimesNotifier(this._apiService, this._locationController)
       : super(const AsyncValue.loading());
 
-  /// Schedule a refresh immediately after today's Isha (+ 15m buffer) so the Hijri date
+  /// Schedule a refresh immediately after today's Isha (+ 35m buffer) so the Hijri date
   /// and prayer times swap to tomorrow's automatically.
   void scheduleNextDayRefresh() async {
     _midnightTimer?.cancel();
@@ -39,7 +39,7 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
       if (ishaTimeStr != null) {
         final parts = ishaTimeStr.split(' ')[0].split(':');
         var refreshTime = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]))
-            .add(const Duration(minutes: 15, seconds: 5));
+            .add(const Duration(minutes: 35, seconds: 5));
 
         // If 'now' is very close to or past today's refresh time, schedule for tomorrow
         if (now.isAfter(refreshTime.subtract(const Duration(seconds: 15)))) {
@@ -142,7 +142,7 @@ class PrayerTimesNotifier extends StateNotifier<AsyncValue<PrayerTimeModel>> {
           final parts = ishaTimeStr.split(' ')[0].split(':');
           final ishaTimeObj = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
           
-          if (now.isAfter(ishaTimeObj.add(const Duration(minutes: 15)))) {
+          if (now.isAfter(ishaTimeObj.add(const Duration(minutes: 35)))) {
             isAfterIsha = true;
           }
         } catch (e) {}

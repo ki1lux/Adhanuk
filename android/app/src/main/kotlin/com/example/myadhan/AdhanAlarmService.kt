@@ -19,7 +19,7 @@ class AdhanAlarmService : Service() {
 
     companion object {
         private const val TAG = "AdhanAlarmService"
-        private const val CHANNEL_ID = "adhan_playback_channel"
+        private const val CHANNEL_ID = "adhan_playback_channel_v2"
         private const val NOTIFICATION_ID = 1001
         const val ACTION_STOP_ADHAN = "com.example.myadhan.STOP_ADHAN"
     }
@@ -190,6 +190,7 @@ class AdhanAlarmService : Service() {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true) // Can't be swiped while Adhan is playing
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(tapPending)
             .setFullScreenIntent(tapPending, true) // Forces it to be the #1 active heads-up alarm
             .setWhen(System.currentTimeMillis())

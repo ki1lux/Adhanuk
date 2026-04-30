@@ -99,7 +99,7 @@ class PrayerUpdateWorker(
         // Read user's preferred calculation method (default: 19 = Algeria)
         val method = prefs.getInt("flutter.calculation_method", 19)
 
-        // Determine if we are past today's Isha (+ 15m). If so, fetch tomorrow's data.
+        // Determine if we are past today's Isha (+ 35m). If so, fetch tomorrow's data.
         var targetDate: java.util.Date? = null
         val ishaTimeStr = prefs.getString("flutter.prayer_5_time", null)
         if (ishaTimeStr != null) {
@@ -110,7 +110,7 @@ class PrayerUpdateWorker(
                     set(Calendar.HOUR_OF_DAY, parts[0].toInt())
                     set(Calendar.MINUTE, parts[1].toInt())
                 }
-                ishaCal.add(Calendar.MINUTE, 15)
+                ishaCal.add(Calendar.MINUTE, 35)
 
                 if (nowCal.timeInMillis > ishaCal.timeInMillis) {
                     nowCal.add(Calendar.DAY_OF_YEAR, 1)
