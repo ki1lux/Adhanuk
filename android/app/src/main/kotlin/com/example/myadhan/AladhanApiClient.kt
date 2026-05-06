@@ -71,11 +71,11 @@ object AladhanApiClient {
                     hijriObj.getString("year")
 
             return PrayerTimesResponse(
-                fajr    = cleanTime(timings.getString("Fajr")),
-                dhuhr   = cleanTime(timings.getString("Dhuhr")),
-                asr     = cleanTime(timings.getString("Asr")),
-                maghrib = cleanTime(timings.getString("Maghrib")),
-                isha    = cleanTime(timings.getString("Isha")),
+                fajr    = addMinutes(timings.getString("Fajr"), 1),
+                dhuhr   = addMinutes(timings.getString("Dhuhr"), 1),
+                asr     = addMinutes(timings.getString("Asr"), 2),
+                maghrib = addMinutes(timings.getString("Maghrib"), 4),
+                isha    = addMinutes(timings.getString("Isha"), 3),
                 hijriDate = hijriStr
             )
         } catch (e: Exception) {
@@ -86,8 +86,26 @@ object AladhanApiClient {
         }
     }
 
-    /** Strip any timezone suffix like " (CEST)" → keep only "HH:mm" */
-    private fun cleanTime(raw: String): String = raw.split(" ").first()
+    /** Strip any timezone suffix like " (CEST)" → keep only "HH:mm" and add minutes */
+    private fun addMinutes(raw: String, minutesToAdd: Int): String {
+        return try {
+            val clean = raw.split(" ").first()
+            val parts = clean.split(":")
+            var hr = parts[0].toInt()
+            var min = parts[1].toInt()
+            
+            min += minutesToAdd
+            if (min >= 60) {
+                hr += min / 60
+                min %= 60
+            }
+            if (hr >= 24) hr %= 24
+            
+            String.format(java.util.Locale.US, "%02d:%02d", hr, min)
+        } catch (e: Exception) {
+            raw.split(" ").first()
+        }
+    }
 
     data class PrayerTimesResponse(
         val fajr: String,

@@ -19,16 +19,36 @@ class AladhanApiResponse {
     required this.dateOnHijri,
   });
 
+  static String _addMinutes(String timeStr, int minutes) {
+    try {
+      final cleanTime = timeStr.split(' ').first;
+      final parts = cleanTime.split(':');
+      var hr = int.parse(parts[0]);
+      var min = int.parse(parts[1]);
+      
+      min += minutes;
+      if (min >= 60) {
+        hr += (min ~/ 60);
+        min = min % 60;
+      }
+      if (hr >= 24) hr = hr % 24;
+      
+      return '${hr.toString().padLeft(2, '0')}:${min.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return timeStr.split(' ').first;
+    }
+  }
+
   factory AladhanApiResponse.fromJson(Map<String, dynamic> json) {
     final timings = json['data']['timings'] as Map<String, dynamic>;
     final date = json['data']['date']['hijri'];
     final hijriStr = '${date['day']} ${date['month']['ar']} ${date['year']}';
     return AladhanApiResponse(
-      fajr: timings['Fajr'] as String,
-      dhuhr: timings['Dhuhr'] as String,
-      asr: timings['Asr'] as String,
-      maghrib: timings['Maghrib'] as String,
-      isha: timings['Isha'] as String,
+      fajr: _addMinutes(timings['Fajr'] as String, 1),
+      dhuhr: _addMinutes(timings['Dhuhr'] as String, 1),
+      asr: _addMinutes(timings['Asr'] as String, 2),
+      maghrib: _addMinutes(timings['Maghrib'] as String, 4),
+      isha: _addMinutes(timings['Isha'] as String, 3),
       dateOnHijri: hijriStr,
     );
   }
