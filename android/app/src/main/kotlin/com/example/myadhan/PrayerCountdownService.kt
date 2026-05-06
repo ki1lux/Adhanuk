@@ -83,7 +83,8 @@ class PrayerCountdownService : Service() {
     override fun onCreate() {
         super.onCreate()
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        lastTrackedDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        // Initialize as empty so the first tick sets it correctly based on the current time vs Isha
+        lastTrackedDate = ""
         createNotificationChannel()
         Log.d(TAG, "Service created")
     }
@@ -151,13 +152,54 @@ class PrayerCountdownService : Service() {
                 val response = AladhanApiClient.fetchPrayerTimes(lat, lng, method = method, date = targetDate)
 
                 if (response != null) {
-                    // Update Hijri date in SharedPreferences immediately
+                    val editor = prefs.edit()
+                    val nowMillis = System.currentTimeMillis()
+
                     if (response.hijriDate.isNotEmpty()) {
-                        prefs.edit().putString("flutter.cached_hijri_date", response.hijriDate).apply()
-                        Log.d(TAG, "Hijri updated to: ${response.hijriDate}")
+                        editor.putString("flutter.cached_hijri_date", response.hijriDate)
                     }
 
-                    // Also enqueue the full worker to update prayer times & alarms
+                    val timeMap = listOf(
+                        Triple(1, "الفجر", response.fajr),
+                        Triple(2, "الظهر", response.dhuhr),
+                        Triple(3, "العصر", response.asr),
+                        Triple(4, "المغرب", response.maghrib),
+                        Triple(5, "العشاء", response.isha)
+                    )
+
+                    for ((id, arabicName, timeStr) in timeMap) {
+                        val parts = timeStr.split(":")
+                        if (parts.size != 2) continue
+                        val hour = parts[0].toIntOrNull() ?: continue
+                        val minute = parts[1].toIntOrNull() ?: continue
+
+                        val cal = Calendar.getInstance().apply {
+                            set(Calendar.HOUR_OF_DAY, hour)
+                            set(Calendar.MINUTE, minute)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+
+                        if (cal.timeInMillis <= nowMillis) {
+                            cal.add(Calendar.DAY_OF_YEAR, 1)
+                        }
+
+                        editor.putString("flutter.prayer_${id}_name", arabicName)
+                        editor.putString("flutter.prayer_${id}_time", timeStr)
+                        editor.putLong("flutter.prayer_${id}_trigger_millis", cal.timeInMillis)
+                    }
+
+                    editor.putString("flutter.last_prayer_update", java.text.SimpleDateFormat(
+                        "yyyy-MM-dd'T'HH:mm:ss.SSS", java.util.Locale.US
+                    ).format(java.util.Date()))
+                    
+                    editor.apply()
+                    Log.d(TAG, "Direct update: Saved new prayer times and Hijri date.")
+
+                    // Reschedule Native Alarms IMMEDIATELY
+                    AlarmSchedulerHelper.rescheduleAllFromPrefs(this@PrayerCountdownService)
+
+                    // Also enqueue the full worker as backup
                     try {
                         val fullUpdate = OneTimeWorkRequestBuilder<PrayerUpdateWorker>().build()
                         WorkManager.getInstance(this@PrayerCountdownService).enqueue(fullUpdate)
@@ -224,7 +266,7 @@ class PrayerCountdownService : Service() {
                     set(Calendar.HOUR_OF_DAY, parts[0].toInt())
                     set(Calendar.MINUTE, parts[1].toInt())
                 }
-                ishaCal.add(Calendar.MINUTE, 15)
+                ishaCal.add(Calendar.MINUTE, 35)
 
                 if (nowCal.timeInMillis > ishaCal.timeInMillis) {
                     nowCal.add(Calendar.DAY_OF_YEAR, 1)
@@ -238,6 +280,11 @@ class PrayerCountdownService : Service() {
         if (lastTrackedDate.isNotEmpty() && targetDayStr != lastTrackedDate) {
             Log.d(TAG, "🌙 Shifted to new reporting day: $targetDayStr")
             lastTrackedDate = targetDayStr
+            
+            // Refresh the persistent notification's system timestamp so it doesn't get stuck
+            cachedBuilder?.setWhen(System.currentTimeMillis())
+            cachedBuilder?.setShowWhen(true)
+            
             fetchFreshDataDirectly(targetDate)
         }
         lastTrackedDate = targetDayStr
@@ -350,7 +397,8 @@ class PrayerCountdownService : Service() {
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
-            .setShowWhen(false)
+            .setWhen(System.currentTimeMillis())
+            .setShowWhen(true)
             .setContentIntent(tapPending)
             .setSilent(true)
 
