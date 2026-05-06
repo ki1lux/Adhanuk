@@ -192,7 +192,6 @@ class AdhanAlarmService : Service() {
             .setOngoing(true) // Can't be swiped while Adhan is playing
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(tapPending)
-            .setFullScreenIntent(tapPending, true) // Forces it to be the #1 active heads-up alarm
             .setWhen(System.currentTimeMillis())
             .setStyle(androidx.core.app.NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(remoteViews)
