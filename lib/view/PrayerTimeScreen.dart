@@ -158,33 +158,18 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
   Widget _buildLoadingState() {
     return Container(
       color: const Color(0xff0A2239),
-      child: Center(
+      child: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(color: Colors.white),
-            const SizedBox(height: 24),
-            const Text(
+            CircularProgressIndicator(color: Colors.white),
+            SizedBox(height: 24),
+            Text(
               'جاري التحميل...',
               style: TextStyle(
                 color: Colors.white,
                 fontFamily: 'Cairo',
                 fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed:
-                  () =>
-                      ref.read(prayerTimesProvider.notifier).fetchPrayerTimes(),
-              icon: const Icon(Icons.refresh),
-              label: const Text(
-                'تحديث الصفحة',
-                style: TextStyle(fontFamily: 'Cairo'),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white24,
-                foregroundColor: Colors.white,
               ),
             ),
           ],
