@@ -80,15 +80,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                 ),
-                // SettingsMenu(icon: Icons.color_lens, title: "Choose theme"),
-                _settingsButtons(Icons.color_lens, "Choose theme", () {}),
                 _settingsButtons(Icons.share, "Share App", () {}),
                 _settingsButtons(Icons.star, "Rate App", () {}),
-                _settingsButtons(
-                  Icons.alarm,
-                  "Reschedule Prayer Alarms",
-                  () {},
-                ),
                 _settingsButtons(Icons.info, "Alarm Status", () {
                   _showAlarmStatusDialog();
                 }),
