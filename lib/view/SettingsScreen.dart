@@ -378,7 +378,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.battery_alert, color: Colors.orange, size: 48),
+            const Icon(Icons.battery_alert, color: const Color(0xFF4DB3E5), size: 48),
             const SizedBox(height: 16),
             const Text(
               'لضمان وصول إشعارات الصلاة في وقتها بدقة:\n\n'
@@ -410,7 +410,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4DB3E5)),
             child: const Text('فتح الإعدادات', style: TextStyle(color: Colors.white)),
           ),
         ],
