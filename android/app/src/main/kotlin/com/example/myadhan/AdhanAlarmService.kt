@@ -74,7 +74,7 @@ class AdhanAlarmService : Service() {
 
         // Register hardware buttons receiver
         val hardwareFilter = IntentFilter().apply {
-            addAction(Intent.ACTION_SCREEN_OFF)
+            // addAction(Intent.ACTION_SCREEN_OFF)
             addAction("android.media.VOLUME_CHANGED_ACTION")
         }
         // System broadcasts do not require the RECEIVER_EXPORTED flag even on Android 14+
@@ -191,7 +191,6 @@ class AdhanAlarmService : Service() {
             .setContentIntent(tapPending)
             .setFullScreenIntent(tapPending, true) // Forces it to be the #1 active heads-up alarm
             .setWhen(System.currentTimeMillis())
-            .addAction(R.drawable.ic_stat_adhan, "إيقاف الأذان", stopPending)
             .setStyle(androidx.core.app.NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(remoteViews)
             .setCustomBigContentView(bigViews)
