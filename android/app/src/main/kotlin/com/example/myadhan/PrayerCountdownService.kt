@@ -67,6 +67,7 @@ class PrayerCountdownService : Service() {
     private var cachedBuilder: NotificationCompat.Builder? = null
     private var currentPrayerId: Int? = null // Track which prayer we're counting down to
     private var lastTrackedDate: String = "" // Track date to detect midnight crossing
+    private var lastNotificationHour: Int = -1 // Track hour to refresh setWhen() each hour
     
     @Volatile
     private var midnightRefreshInProgress = false // Flag while fetching new data at midnight
@@ -384,6 +385,14 @@ class PrayerCountdownService : Service() {
 
         val builder = getOrCreateBuilder()
         builder.setContentTitle(title)
+
+        // Refresh the notification's displayed timestamp every hour so it never shows "yesterday".
+        // We compare the current hour-of-day to detect when the hour rolls over.
+        val currentHour = nowCal.get(Calendar.HOUR_OF_DAY)
+        if (currentHour != lastNotificationHour) {
+            lastNotificationHour = currentHour
+            builder.setWhen(System.currentTimeMillis())
+        }
         
         if (midnightRefreshInProgress) {
             builder.setContentText("جاري تحديث التاريخ...")
