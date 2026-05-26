@@ -173,13 +173,28 @@ class PrayerCountdownService : Service() {
                         val hour = parts[0].toIntOrNull() ?: continue
                         val minute = parts[1].toIntOrNull() ?: continue
 
-                        val cal = Calendar.getInstance().apply {
-                            set(Calendar.HOUR_OF_DAY, hour)
-                            set(Calendar.MINUTE, minute)
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
+                        // If we fetched data for a specific targetDate (e.g. tomorrow after Isha),
+                        // seed the calendar from that target date to avoid a double +1 day shift.
+                        val cal = if (targetDate != null) {
+                            Calendar.getInstance().apply {
+                                time = targetDate
+                                set(Calendar.HOUR_OF_DAY, hour)
+                                set(Calendar.MINUTE, minute)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }
+                        } else {
+                            Calendar.getInstance().apply {
+                                set(Calendar.HOUR_OF_DAY, hour)
+                                set(Calendar.MINUTE, minute)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }
                         }
 
+                        // Only push to the next day if the resolved time is still in the past.
+                        // For targetDate-based fetches this should almost never be needed,
+                        // but acts as a safety net for edge cases (e.g. clock drift).
                         if (cal.timeInMillis <= nowMillis) {
                             cal.add(Calendar.DAY_OF_YEAR, 1)
                         }
