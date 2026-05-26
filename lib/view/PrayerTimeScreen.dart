@@ -784,6 +784,51 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                         ),
                       ),
                     ),
+                    // ── Apply to All button ──────────────────────────────
+                    TextButton(
+                      onPressed: () async {
+                        final allPrayers = ['الفجر', 'الظهر', 'العصر', 'المغرب', 'العشاء'];
+                        for (final name in allPrayers) {
+                          await prefs.setBool('adhan_enabled_$name', isEnabled);
+                          await prefs.setString('adhan_sound_$name', selectedSound);
+                        }
+                        Navigator.pop(context);
+                        setState(() {});
+                        // 🔄 Reschedule with the new unified settings
+                        final prayerTimesAsync = ref.read(prayerTimesProvider);
+                        if (prayerTimesAsync.hasValue) {
+                          await PrayerAlarmScheduler.scheduleAllPrayersWithData(
+                            prayerTimesAsync.value!,
+                          );
+                        }
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text(
+                                'تم تطبيق الإعدادات على جميع الصلوات',
+                                style: TextStyle(fontFamily: 'Cairo'),
+                                textAlign: TextAlign.center,
+                              ),
+                              backgroundColor: const Color(0xFF1A3A5C),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text(
+                        'تطبيق للكل',
+                        style: TextStyle(
+                          color: Color(0xFF4DB3E5),
+                          fontFamily: 'Cairo',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    // ────────────────────────────────────────────────────
                     TextButton(
                       onPressed: () async {
                         await prefs.setBool(
