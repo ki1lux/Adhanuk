@@ -55,11 +55,12 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
           final address = geoData['address'] as Map<String, dynamic>?;
           if (address != null) {
             String country = address['country'] as String? ?? '';
-            String city = address['city'] as String? 
-                ?? address['town'] as String? 
-                ?? address['village'] as String? 
-                ?? address['state'] as String? 
-                ?? '';
+            String city =
+                address['city'] as String? ??
+                address['town'] as String? ??
+                address['village'] as String? ??
+                address['state'] as String? ??
+                '';
 
             await prefs.setString('country_name', country);
             await prefs.setString('city_name', city);
@@ -82,10 +83,9 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
       }
 
       // Refresh prayer times with GPS coordinates
-      ref.read(prayerTimesProvider.notifier).fetchPrayerTimes(
-        lat: position.latitude,
-        lng: position.longitude,
-      );
+      ref
+          .read(prayerTimesProvider.notifier)
+          .fetchPrayerTimes(lat: position.latitude, lng: position.longitude);
     } catch (e) {
       print("Error: $e");
     }
@@ -121,7 +121,7 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
     for (int i = 0; i < prayers.length; i++) {
       final parts = prayers[i].time.split(':');
       final prayerMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
-      
+
       int iqamaDelay = prayers[i].name == 'المغرب' ? 15 : 30;
       final iqamaLimitMinutes = prayerMinutes + iqamaDelay;
 
@@ -213,41 +213,45 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,  // White icons on Android
-        statusBarBrightness: Brightness.dark,        // White icons on iOS
+        statusBarIconBrightness: Brightness.light, // White icons on Android
+        statusBarBrightness: Brightness.dark, // White icons on iOS
       ),
       child: Scaffold(
-      backgroundColor: const Color(0xff0A2239),
-      body: Stack(
-        children: [
-          SvgPicture.asset(
-            'assets/Vector.svg',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
-          Column(
-            children: [
-              _buildLocationHeader(),
-              SizedBox(height: MediaQuery.sizeOf(context).height * 0.05),
-              ...prayers.asMap().entries.map(
-                (e) => _buildPrayerCard(
-                  e.value.name,
-                  e.value.time,
-                  e.key == nextIndex,
+        backgroundColor: const Color(0xff0A2239),
+        body: Stack(
+          children: [
+            SvgPicture.asset(
+              'assets/Vector.svg',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+            Column(
+              children: [
+                _buildLocationHeader(),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.05),
+                ...prayers.asMap().entries.map(
+                  (e) => _buildPrayerCard(
+                    e.value.name,
+                    e.value.time,
+                    e.key == nextIndex,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
   Widget _buildLocationHeader() {
     return Padding(
-      padding: EdgeInsets.only(right: 16, left: 48, top: MediaQuery.sizeOf(context).height * 0.1),
+      padding: EdgeInsets.only(
+        right: 16,
+        left: 48,
+        top: MediaQuery.sizeOf(context).height * 0.1,
+      ),
       child: InkWell(
         onTap: _showLocationDialog,
         borderRadius: BorderRadius.circular(12),
@@ -320,7 +324,12 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
       barrierLabel: '',
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 300),
-      transitionBuilder: (context, primaryAnimation, secondaryAnimation, child) {
+      transitionBuilder: (
+        context,
+        primaryAnimation,
+        secondaryAnimation,
+        child,
+      ) {
         final curve = CurvedAnimation(
           parent: primaryAnimation,
           curve: Curves.easeInOutCubic,
@@ -331,13 +340,11 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
         ).animate(curve);
         return ScaleTransition(
           scale: scaleAnimation,
-          child: FadeTransition(
-            opacity: curve,
-            child: child,
-          ),
+          child: FadeTransition(opacity: curve, child: child),
         );
       },
-      pageBuilder: (context, animation, secondaryAnimation) => StatefulBuilder(
+      pageBuilder:
+          (context, animation, secondaryAnimation) => StatefulBuilder(
             builder:
                 (context, setDialogState) => AlertDialog(
                   backgroundColor: const Color(0xFF0E2031),
@@ -403,32 +410,43 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                                     );
                                     final response = await http.get(
                                       uri,
-                                      headers: {'User-Agent': 'AdhanUK-App/1.0'},
+                                      headers: {
+                                        'User-Agent': 'AdhanUK-App/1.0',
+                                      },
                                     );
                                     if (response.statusCode == 200) {
                                       final List<dynamic> data = json.decode(
                                         response.body,
                                       );
-                                    final List<Map<String, dynamic>> results =
-                                        data
-                                            .map(
-                                              (item) {
-                                                final address = item['address'] as Map<String, dynamic>? ?? {};
-                                                final city = address['city'] as String?
-                                                    ?? address['town'] as String?
-                                                    ?? address['village'] as String?
-                                                    ?? address['state'] as String?
-                                                    ?? (item['display_name'] as String).split(',').first.trim();
-                                                final country = address['country'] as String? ?? '';
-                                                return {
-                                                  'city': city,
-                                                  'country': country,
-                                                  'lat': double.parse(item['lat'] as String),
-                                                  'lon': double.parse(item['lon'] as String),
-                                                };
-                                              },
-                                            )
-                                            .toList();
+                                      final List<Map<String, dynamic>> results =
+                                          data.map((item) {
+                                            final address =
+                                                item['address']
+                                                    as Map<String, dynamic>? ??
+                                                {};
+                                            final city =
+                                                address['city'] as String? ??
+                                                address['town'] as String? ??
+                                                address['village'] as String? ??
+                                                address['state'] as String? ??
+                                                (item['display_name'] as String)
+                                                    .split(',')
+                                                    .first
+                                                    .trim();
+                                            final country =
+                                                address['country'] as String? ??
+                                                '';
+                                            return {
+                                              'city': city,
+                                              'country': country,
+                                              'lat': double.parse(
+                                                item['lat'] as String,
+                                              ),
+                                              'lon': double.parse(
+                                                item['lon'] as String,
+                                              ),
+                                            };
+                                          }).toList();
                                       setDialogState(() {
                                         suggestions = results;
                                         isSearching = false;
@@ -453,14 +471,17 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                             if (suggestions.isNotEmpty) ...[
                               const SizedBox(height: 18),
                               ConstrainedBox(
-                                constraints: const BoxConstraints(maxHeight: 200),
+                                constraints: const BoxConstraints(
+                                  maxHeight: 200,
+                                ),
                                 child: ListView.builder(
                                   shrinkWrap: true,
                                   itemCount: suggestions.length,
                                   itemBuilder: (context, index) {
                                     final loc = suggestions[index];
                                     final cityName = loc['city'] as String;
-                                    final countryName = loc['country'] as String;
+                                    final countryName =
+                                        loc['country'] as String;
                                     return ListTile(
                                       dense: true,
                                       leading: const Icon(
@@ -484,15 +505,30 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                                         // Save location and names
                                         final prefs =
                                             await SharedPreferences.getInstance();
-                                        await prefs.setDouble('last_latitude', lat);
-                                        await prefs.setDouble('last_longitude', lon);
-                                        await prefs.setString('country_name', countryName);
-                                        await prefs.setString('city_name', cityName);
+                                        await prefs.setDouble(
+                                          'last_latitude',
+                                          lat,
+                                        );
+                                        await prefs.setDouble(
+                                          'last_longitude',
+                                          lon,
+                                        );
+                                        await prefs.setString(
+                                          'country_name',
+                                          countryName,
+                                        );
+                                        await prefs.setString(
+                                          'city_name',
+                                          cityName,
+                                        );
 
                                         _updateLocation(countryName, cityName);
                                         ref
                                             .read(prayerTimesProvider.notifier)
-                                            .fetchPrayerTimes(lat: lat, lng: lon);
+                                            .fetchPrayerTimes(
+                                              lat: lat,
+                                              lng: lon,
+                                            );
                                       },
                                     );
                                   },
@@ -594,10 +630,9 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
         }
 
         // Refresh prayer times with manual coordinates
-        ref.read(prayerTimesProvider.notifier).fetchPrayerTimes(
-          lat: location.latitude,
-          lng: location.longitude,
-        );
+        ref
+            .read(prayerTimesProvider.notifier)
+            .fetchPrayerTimes(lat: location.latitude, lng: location.longitude);
       } else {
         _updateLocation('لم يتم العثور', cityName);
       }
@@ -630,7 +665,6 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
     );
   }
 
-
   Future<bool> _isAdhanEnabled(String prayerName) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('adhan_enabled_$prayerName') ?? true;
@@ -658,20 +692,23 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
       barrierLabel: '',
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 300),
-      transitionBuilder: (context, primaryAnimation, secondaryAnimation, child) {
+      transitionBuilder: (
+        context,
+        primaryAnimation,
+        secondaryAnimation,
+        child,
+      ) {
         final curve = CurvedAnimation(
           parent: primaryAnimation,
           curve: Curves.easeInOutCubic,
         );
         return ScaleTransition(
           scale: Tween<double>(begin: 0.85, end: 1.0).animate(curve),
-          child: FadeTransition(
-            opacity: curve,
-            child: child,
-          ),
+          child: FadeTransition(opacity: curve, child: child),
         );
       },
-      pageBuilder: (context, animation, secondaryAnimation) => StatefulBuilder(
+      pageBuilder:
+          (context, animation, secondaryAnimation) => StatefulBuilder(
             builder:
                 (context, setDialogState) => AlertDialog(
                   backgroundColor: const Color(0xFF0E2031),
@@ -682,7 +719,6 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                       fontFamily: 'Cairo',
                       fontWeight: FontWeight.w700,
                       fontSize: 24,
-                      
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -719,9 +755,9 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                         ),
                         const SizedBox(height: 12),
                         ...sounds.map(
-                          (sound) => 
-                            // ignore: deprecated_member_use
-                            RadioListTile<String>(
+                          (sound) =>
+                          // ignore: deprecated_member_use
+                          RadioListTile<String>(
                             title: Text(
                               sound['name']!,
                               style: const TextStyle(
@@ -743,9 +779,13 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                                   setDialogState(() => playingSound = null);
                                 } else {
                                   await audioPlayer.stop();
-                                  setDialogState(() => playingSound = sound['id']);
-                                  await audioPlayer.play(AssetSource('audio/${sound['id']}.mp3'));
-                                  
+                                  setDialogState(
+                                    () => playingSound = sound['id'],
+                                  );
+                                  await audioPlayer.play(
+                                    AssetSource('audio/${sound['id']}.mp3'),
+                                  );
+
                                   audioPlayer.onPlayerComplete.listen((_) {
                                     if (mounted) {
                                       setDialogState(() => playingSound = null);
@@ -787,10 +827,19 @@ class _PrayerTimeState extends ConsumerState<PrayerTimeScreen> {
                     // ── Apply to All button ──────────────────────────────
                     TextButton(
                       onPressed: () async {
-                        final allPrayers = ['الفجر', 'الظهر', 'العصر', 'المغرب', 'العشاء'];
+                        final allPrayers = [
+                          'الفجر',
+                          'الظهر',
+                          'العصر',
+                          'المغرب',
+                          'العشاء',
+                        ];
                         for (final name in allPrayers) {
                           await prefs.setBool('adhan_enabled_$name', isEnabled);
-                          await prefs.setString('adhan_sound_$name', selectedSound);
+                          await prefs.setString(
+                            'adhan_sound_$name',
+                            selectedSound,
+                          );
                         }
                         Navigator.pop(context);
                         setState(() {});
@@ -924,7 +973,10 @@ class _AnimatedPrayerCardState extends State<_AnimatedPrayerCard> {
                     borderRadius: BorderRadius.circular(36),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -938,9 +990,10 @@ class _AnimatedPrayerCardState extends State<_AnimatedPrayerCard> {
                                 padding: const EdgeInsets.all(8.0),
                                 child: Icon(
                                   enabled ? Icons.volume_up : Icons.volume_off,
-                                  color: enabled
-                                      ? const Color(0xffF0F8FF)
-                                      : Colors.white38,
+                                  color:
+                                      enabled
+                                          ? const Color(0xffF0F8FF)
+                                          : Colors.white38,
                                 ),
                               ),
                             );

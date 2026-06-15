@@ -16,7 +16,10 @@ class CountdownTimer extends ConsumerStatefulWidget {
 class _CountdownTimerState extends ConsumerState<CountdownTimer> {
   static const _defaultIqamaDelay = Duration(minutes: 30);
   static const _maghribIqamaDelay = Duration(minutes: 15);
-  static const _textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 16);
+  static const _textStyle = TextStyle(
+    fontWeight: FontWeight.bold,
+    fontSize: 16,
+  );
 
   Timer? _timer;
   Duration _remaining = Duration.zero;
@@ -46,30 +49,39 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
 
     final now = DateTime.now();
     final nextIndex = _findNextPrayerIndex(prayers, now);
-    
+
     // First, let's check if we are currently IN an Iqamah phase
     final previousIndex = (nextIndex - 1 + prayers.length) % prayers.length;
     final previous = prayers[previousIndex];
-    // We need to know previous prayer's actual time for *today* 
+    // We need to know previous prayer's actual time for *today*
     // (or yesterday if Fajr next and Isha was yesterday)
-    DateTime previousTimeCandidate = DateTime(now.year, now.month, now.day, previous.time.hour, previous.time.minute);
+    DateTime previousTimeCandidate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      previous.time.hour,
+      previous.time.minute,
+    );
     if (previousTimeCandidate.isAfter(now)) {
-       previousTimeCandidate = previousTimeCandidate.subtract(const Duration(days: 1));
+      previousTimeCandidate = previousTimeCandidate.subtract(
+        const Duration(days: 1),
+      );
     }
 
     final delayForPrevious = _getIqamaDelay(previous.name);
     final elapsedSincePrevious = now.difference(previousTimeCandidate);
 
-    if (elapsedSincePrevious >= Duration.zero && elapsedSincePrevious < delayForPrevious) {
+    if (elapsedSincePrevious >= Duration.zero &&
+        elapsedSincePrevious < delayForPrevious) {
       // WE ARE IN THE IQAMAH PHASE!
       _isAdhanPhase = false;
       _lastPlayedPrayer = previous.name;
       _nextPrayerName = prayers[(previousIndex + 1) % prayers.length].name;
       _iqamaStartTime = previousTimeCandidate;
-      _iqamaRemaining = elapsedSincePrevious; 
-      // Keep target time as the previous one just so _remaining isn't null, 
+      _iqamaRemaining = elapsedSincePrevious;
+      // Keep target time as the previous one just so _remaining isn't null,
       // though _remaining isn't shown during Iqamah phase.
-      _targetTime = previousTimeCandidate; 
+      _targetTime = previousTimeCandidate;
     } else {
       // WE ARE IN NORMAL ADHAN COUNTDOWN PHASE
       final next = prayers[nextIndex];
@@ -77,7 +89,7 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
       _targetTime = _getNextPrayerTime(next.time, now);
       _isAdhanPhase = true;
       _iqamaStartTime = null;
-      _iqamaRemaining = Duration.zero; 
+      _iqamaRemaining = Duration.zero;
     }
 
     _updateRemaining();
@@ -102,9 +114,11 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
   }
 
   void _handlePhaseTransition() {
-    if (_isAdhanPhase && _remaining.inSeconds <= 0 && _lastPlayedPrayer != _nextPrayerName) {
+    if (_isAdhanPhase &&
+        _remaining.inSeconds <= 0 &&
+        _lastPlayedPrayer != _nextPrayerName) {
       final delay = _getIqamaDelay(_nextPrayerName);
-      
+
       // If we completely skipped the Iqamah phase (e.g. user manually stepped time forward)
       if (-_remaining.inSeconds >= delay.inSeconds) {
         _timer?.cancel();
@@ -116,11 +130,11 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
       _isAdhanPhase = false;
       _lastPlayedPrayer = _nextPrayerName;
       _iqamaStartTime = _targetTime ?? DateTime.now();
-      _iqamaRemaining = Duration.zero; 
+      _iqamaRemaining = Duration.zero;
     } else if (!_isAdhanPhase && _iqamaStartTime != null) {
       final delay = _getIqamaDelay(_lastPlayedPrayer);
       final elapsed = DateTime.now().difference(_iqamaStartTime!);
-      _iqamaRemaining = elapsed; 
+      _iqamaRemaining = elapsed;
       if (elapsed >= delay) {
         _timer?.cancel();
         widget.onFinish();
@@ -129,7 +143,10 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
     }
   }
 
-  int _findNextPrayerIndex(List<({String name, DateTime time})> prayers, DateTime now) {
+  int _findNextPrayerIndex(
+    List<({String name, DateTime time})> prayers,
+    DateTime now,
+  ) {
     for (int i = 0; i < prayers.length; i++) {
       if (prayers[i].time.isAfter(now)) return i;
     }
@@ -137,8 +154,16 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
   }
 
   DateTime _getNextPrayerTime(DateTime prayerTime, DateTime now) {
-    final candidate = DateTime(now.year, now.month, now.day, prayerTime.hour, prayerTime.minute);
-    return candidate.isBefore(now) ? candidate.add(const Duration(days: 1)) : candidate;
+    final candidate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      prayerTime.hour,
+      prayerTime.minute,
+    );
+    return candidate.isBefore(now)
+        ? candidate.add(const Duration(days: 1))
+        : candidate;
   }
 
   String _formatDuration(Duration d) {
@@ -148,18 +173,32 @@ class _CountdownTimerState extends ConsumerState<CountdownTimer> {
 
   @override
   Widget build(BuildContext context) {
-    return ref.watch(prayerTimesProvider).when(
-      loading: () => Text('00:00:00', style: _textStyle.copyWith(color: const Color(0xffF0F8FF))),
-      error: (_, __) => Text('--:--:--', style: _textStyle.copyWith(color: Colors.red)),
-      data: (data) {
-        if (_targetTime == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _startCountdown(data));
-        }
-        return Text(
-          _formatDuration(_isAdhanPhase ? _remaining : _iqamaRemaining),
-          style: _textStyle.copyWith(color: _isAdhanPhase ? const Color(0xffF0F8FF) : Colors.red),
+    return ref
+        .watch(prayerTimesProvider)
+        .when(
+          loading:
+              () => Text(
+                '00:00:00',
+                style: _textStyle.copyWith(color: const Color(0xffF0F8FF)),
+              ),
+          error:
+              (_, __) => Text(
+                '--:--:--',
+                style: _textStyle.copyWith(color: Colors.red),
+              ),
+          data: (data) {
+            if (_targetTime == null) {
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _startCountdown(data),
+              );
+            }
+            return Text(
+              _formatDuration(_isAdhanPhase ? _remaining : _iqamaRemaining),
+              style: _textStyle.copyWith(
+                color: _isAdhanPhase ? const Color(0xffF0F8FF) : Colors.red,
+              ),
+            );
+          },
         );
-      },
-    );
   }
 }

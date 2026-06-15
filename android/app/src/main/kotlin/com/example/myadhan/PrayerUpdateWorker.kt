@@ -139,6 +139,11 @@ class PrayerUpdateWorker(
         // Refresh countdown notification
         PrayerCountdownService.startIfNeeded(applicationContext)
 
+        // Notify Home Screen Widget to update
+        val intent = android.content.Intent("com.example.myadhan.ACTION_PRAYER_UPDATED")
+        intent.setPackage(applicationContext.packageName)
+        applicationContext.sendBroadcast(intent)
+
         Log.d(TAG, "✅ Prayer times updated and alarms rescheduled")
         return Result.success()
     }

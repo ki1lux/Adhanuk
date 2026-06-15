@@ -148,5 +148,10 @@ object AlarmSchedulerHelper {
         }
 
         Log.d(TAG, "Rescheduled $scheduledCount alarms from SharedPreferences")
+
+        // Notify Home Screen Widget to update
+        val intent = Intent("com.example.myadhan.ACTION_PRAYER_UPDATED")
+        intent.setPackage(context.packageName)
+        context.sendBroadcast(intent)
     }
 }
